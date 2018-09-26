@@ -27,8 +27,7 @@ def imputer(df):
         
     return df
 
-def main()
-
+def main():
     files_list = glob('D://bases//*.csv')
 
     file_path = files_list[np.random.randint(0, len(files_list)-1)]
@@ -45,15 +44,9 @@ def main()
     except:
         df = pd.read_csv(file_path)
 
-    df.head()
-
     df = remove_categorical(df)
 
     df = imputer(df)
-
-    df.describe()
-
-    df.head()
 
     X = df.iloc[:,:-1]
     y = df.iloc[:,-1]
