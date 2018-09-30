@@ -4,7 +4,7 @@ import six
 
 from scipy.spatial.distance import pdist, squareform
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.datasets import load_boston
+# from sklearn.datasets import load_boston
 from features import *
 
 
@@ -44,7 +44,7 @@ def _pprint(params, offset=0, printer=repr):
         if len(this_repr) > 500:
             this_repr = this_repr[:300] + '...' + this_repr[-100:]
         if i > 0:
-            if (this_line_length + len(this_repr) >= 75 or '\n' in this_repr):
+            if this_line_length + len(this_repr) >= 75 or '\n' in this_repr:
                 params_list.append(line_sep)
                 this_line_length = len(line_sep)
             else:
@@ -63,7 +63,10 @@ def _pprint(params, offset=0, printer=repr):
     return lines
 
 
-class BaseMeta(object):    
+class BaseMeta(object):
+    """
+    Base class for meta features evaluators objects.
+    """
     
     def get_params(self):
         pass
@@ -75,44 +78,65 @@ class BaseMeta(object):
     
 
 class MetaFeatures(BaseMeta):
+    """
+    Meta feature evaluator for regression problems.
+    """
     
     def __init__(self, random_state=0):        
         self.random_state = random_state
         self.params_ = {}
-        
             
     def fit(self, X, y):
+        """
+        Calculate meta features.
+
+        Parameters
+        ----------
+        X : numpy.array
+            2D array with features columns
+        y : numpy.array
+            Array of true values
+
+        Return
+        ------
+        object :
+            MetaFeatures object with params calculated
+
+        """
+
         # Pre calculate some indicators inputs
         X = MinMaxScaler().fit_transform(X)       
         model = sm.OLS(y, X).fit()        
-        dist_matrix = squareform(pdist(X, metric='euclidean'))        
+        print(type(model))
+        dist_matrix = squareform(pdist(X, metric='euclidean'))
         # Feed and Calculate indicators
         self.params_ = {
-            'c1' : c1(X, y),
-            'c2' : c2(X, y),
-            'c3' : c3(X, y),
-            'c4' : c4(X, y),
-            'l1' : l1(X, y, model),
-            'l2' : l2(X, y, model),
-            'l3' : l3(X, y, model),
-            'l4' : l4(X, y),
-            's1' : s1(y, dist_matrix),
-            's2' : s2(X, y),
-            's3' : s3(X, y, dist_matrix),
-            't2' : t2(X),            
-        }        
-        
+            'c1': c1(X, y),
+            'c2': c2(X, y),
+            'c3': c3(X, y),
+            'c4': c4(X, y),
+            'l1': l1(X, y, model),
+            'l2': l2(X, y, model),
+            'l3': l3(X, y, model),
+            's1': s1(y, dist_matrix),
+            's2': s2(X, y),
+            's3': s3(X, y, dist_matrix),
+            's4': s4(X, y),
+            't2': t2(X),
+        }
+
         return self
         
     def get_params(self):        
-        return self.params_ 
+        return self.params_
+
 
 def main():
     boston = load_boston()
     X = boston["data"]
     y = boston["target"]
-    names = boston["feature_names"]
     mf = MetaFeatures()
+
     res = mf.fit(X, y)
     print(res)
 
