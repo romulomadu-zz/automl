@@ -107,7 +107,6 @@ class MetaFeatures(BaseMeta):
         # Pre calculate some indicators inputs
         X = MinMaxScaler().fit_transform(X)       
         model = sm.OLS(y, X).fit()        
-        print(type(model))
         dist_matrix = squareform(pdist(X, metric='euclidean'))
         # Feed and Calculate indicators
         self.params_ = {
