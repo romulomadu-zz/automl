@@ -82,7 +82,7 @@ def c3(X, y):
     # Calculate rho of Spearman
     def rho_spearman(d):
         n = d.shape[0]        
-        return 1-6*np.ndarray.sum(d**2)/(n**3-n) 
+        return 1-6*(d**2).sum()/(n**3-n) 
     
     for col in range(ncol):        
         # Calculate rank vectors to Spearman correlation
@@ -163,7 +163,7 @@ def s1(y, dist):
     edges = T.edges()
     edges_dist_norm = min_max(np.array([abs(y[i] - y[j]) for i, j in edges]))
 
-    return np.ndarray.sum(edges_dist_norm)/len(edges)
+    return edges_dist_norm.sum()/len(edges)
         
 
 def s2(X, y):
@@ -193,7 +193,7 @@ def s2(X, y):
         d.append(np.linalg.norm(X[i,:]-X[i-1,:]))
         i = i + 1
 
-    return np.ndarray.sum(min_max(np.array(d)))/(n-1)
+    return min_max(np.array(d)).sum()/(n-1)
 
 
 def s3(X, y, dist_matrix):
@@ -222,7 +222,7 @@ def s3(X, y, dist_matrix):
         i_nn = np.argmin(np.delete(dist_matrix[i, :], i))
         e.append(abs(y[i]-y[i_nn]))
     
-    return np.ndarray.sum(min_max(np.array(e)))/n
+    return min_max(np.array(e)).sum()/n
 
 
 def s4(X, y, random_state=0):
@@ -265,7 +265,7 @@ def s4(X, y, random_state=0):
     abs_error = np.array([abs(y[int(nearest_ind[i])]-y_[i]) for i in range(y_.shape[0])])
     abs_error_norm = min_max(abs_error)
 
-    return np.ndarray.sum(abs_error_norm)/n
+    return abs_error_norm.sum()/n
 
 
 def l1(X, y, model):
@@ -315,7 +315,7 @@ def l2(X, y, model):
     # Normalize squared residuous
     res_norm = min_max(res**2)
     
-    return np.ndarray.sum(res_norm)/n
+    return res_norm.sum()/n
 
 
 def l3(X, y, model, random_state=0):
@@ -357,7 +357,7 @@ def l3(X, y, model, random_state=0):
 
     res_norm = min_max(abs(model.predict(X_) - y_.T))
 
-    return np.ndarray.sum(res_norm)/n
+    return res_norm.sum()/n
 
 
 def t2(X):
@@ -385,8 +385,8 @@ def main():
 
 
 def min_max(x):
-    min_ = np.ndarray.min(x)
-    return (x-min_)/(np.ndarray.max(x)-min_)
+    min_ = x.min()
+    return (x-min_)/(x.max()-min_)
 
 if __name__ == "__main__":
     main()
