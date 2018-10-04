@@ -1,6 +1,6 @@
 
 import numpy as np
-import six
+import six_
 
 def _pprint(params, offset=0, printer=repr):
     """
