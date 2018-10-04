@@ -1,9 +1,9 @@
 import re
 import pandas as pd
 import numpy as np
+import random
 
 from glob import glob
-from sklearn.preprocessing import Imputer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -14,8 +14,8 @@ class PrepDataset(object):
     def __init__(self, n_unique_values_treshold=15):
         self.n_unique_values_treshold = n_unique_values_treshold
 
-    def fit_transform(dataset):
-        return self.imputer(self._remove_categorical(df))
+    def fit_transform(self, dataset):
+        return self._imputer(self._remove_categorical(dataset))
 
     def _determine_type_of_feature(self, df):        
         feature_types = []
@@ -42,21 +42,20 @@ class PrepDataset(object):
             if len(features_data[col].unique()) > self.n_unique_values_treshold:
                 features_data = features_data.drop(col, axis=1)
 
-        return pd.concat(features_data, label_data, axis=1)
+        return pd.concat([features_data, label_data], axis=1)
 
-    @staticmethod
-    def _nan_counts(series):
+    def _nan_counts(self, series):
         return series.isna().sum()/series.shape[0]
 
     def _imputer(self, df):
         df_types = self._determine_type_of_feature(df)
         
         for col, typ in zip(df.columns, df_types):
-            if _nan_counts(df[col]) > 0.1:
+            if self._nan_counts(df[col]) > 0.1:
                 if typ == 'continuous':
                     df[col] = df[col].fillna(0.0)
                 else:
-                    df[col] = df[col].fillna(None)
+                    df[col] = df[col].fillna('empty')
                 continue
             if typ == 'continuous':
                 df[col] = df[col].fillna(df[col].median())
@@ -83,24 +82,25 @@ def main():
     except:
         df = pd.read_csv(file_path)
 
-    prepdata = PrepDataset()
+	prepdata = PrepDataset()
 
     df = prepdata.fit_transform(df)
+    print(df)
+    
+    # X = df.iloc[:,:-1]
+    # y = df.iloc[:,-1]
 
-    X = df.iloc[:,:-1]
-    y = df.iloc[:,-1]
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    # rf = RandomForestRegressor(random_state=0)
+    # model = rf.fit(X_train, y_train)
+    # y_pred = model.predict(X_test)
 
-    rf = RandomForestRegressor(random_state=0)
-    model = rf.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    # print(mean_squared_error(y_test, y_pred))
 
-    print(mean_squared_error(y_test, y_pred))
+    # import matplotlib.pyplot as plt
 
-    import matplotlib.pyplot as plt
-
-    plt.scatter(y_test, y_pred)
+    # plt.scatter(y_test, y_pred)
 
 if __name__ == '__main__':
     main()
