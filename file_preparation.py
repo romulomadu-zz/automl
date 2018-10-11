@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
-__author__ = 'Rômulo Rodrigues <romulomadu#@gmail.com>'
+__author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1'
 
 
