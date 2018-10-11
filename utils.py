@@ -1,6 +1,9 @@
 
 import numpy as np
-import six_
+
+def iteritems(d, **kw):
+    """Return an iterator over the (key, value) pairs of a dictionary."""
+    return iter(getattr(d, "items")(**kw))
 
 def _pprint(params, offset=0, printer=repr):
     """
@@ -24,7 +27,7 @@ def _pprint(params, offset=0, printer=repr):
     this_line_length = offset
     line_sep = ',\n' + (1 + offset // 2) * ' '
     
-    for i, (k, v) in enumerate(sorted(six.iteritems(params))):        
+    for i, (k, v) in enumerate(sorted(iteritems(params))):        
         if type(v) is float:
 
             # use str for representing floating point numbers
