@@ -12,7 +12,7 @@ from scipy.spatial.distance import pdist, squareform
 from utils import _pprint
 
 __author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
-__version__ = '0.1'
+__version__ = '0.1.0'
 
 
 class BaseMeta(object):
