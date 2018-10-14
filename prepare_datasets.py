@@ -15,14 +15,10 @@ if not type_ext:
 pathoutput = input('Enter repository to save:')
 if not pathoutput:
 	pathoutput = '/media/romulo/C4B4FA64B4FA57FE//bases_preparadas//'
-#pathinput = '/media/romulo/C4B4FA64B4FA57FE//bases//'
-
-#type_ext = .csv
 
 # Get file in directory
 files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
-
 
 # Loop and prepare dataset and save
 # in output repo
@@ -51,7 +47,9 @@ for file_path in files_list:
 
 	prepdata = PrepareDataset(n_unique_values_treshold=.01, 
                  na_values_ratio_theshold=.10)
-	dataset_out = prepdata.fit_transform(dataset.iloc[:,:-1], dataset.iloc[:,-1])
+	X = dataset.iloc[:,:-1]
+	y =  dataset.iloc[:,-1]
+	dataset_out = prepdata.fit_transform(X, y)
 
 	dataset_out.to_csv(pathoutput+file_name)
 

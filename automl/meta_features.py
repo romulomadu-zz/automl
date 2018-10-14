@@ -9,7 +9,7 @@ from sklearn.neighbors import KDTree
 from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
 from scipy.spatial.distance import pdist, squareform
-from utils import _pprint
+from automl.utils import _pprint
 
 __author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1.0'
@@ -34,10 +34,11 @@ class MetaFeatures(BaseMeta):
     Meta feature evaluator for regression problems.
     """
     
-    def __init__(self, dataset_name='None', random_state=0):        
+    def __init__(self, dataset_name='None', random_state=0, metric='mse'):        
         self.random_state = random_state
         self.params_ = {}
         self.dataset_name = dataset_name
+        self.metric = metric
             
     def fit(self, X, y):
         self.params_ = self._calculate_meta_features(X,y)
@@ -77,11 +78,11 @@ class MetaFeatures(BaseMeta):
             'c4': c4(X, y),
             'l1': l1(X, y, model),
             'l2': l2(X, y, model),
-            'l3': l3(X, y, model),
+            'l3': l3(X, y, model, metric=self.metric),
             's1': s1(y, dist_matrix),
             's2': s2(X, y),
-            's3': s3(X, y, dist_matrix),
-            's4': s4(X, y),
+            's3': s3(X, y, dist_matrix, self.metric),
+            's4': s4(X, y, metric=self.metric),
             't2': t2(X),
         }
 
@@ -105,6 +106,7 @@ def c1(X, y):
         Maximum feature correlation to the output
 
     """
+
     corr_list = list()
     for col in range(X.shape[1]):
         corr = spearmanr(X[:, col], y)
@@ -133,7 +135,7 @@ def c2(X, y):
     for col in range(X.shape[1]):
         corr = spearmanr(X[:, col], y)
         corr_list.append(abs(corr[0]))
-    return sum(corr_list)/X.shape[1]
+    return np.mean(corr_list)
     
 
 def c3(X, y):
@@ -161,12 +163,12 @@ def c3(X, y):
     # Calculate rho of Spearman
     def rho_spearman(d):
         n = d.shape[0]        
-        return 1-6*(d**2).sum()/(n**3-n) 
+        return 1 - 6 * (d**2).sum() / (n**3 - n) 
     
     for col in range(ncol):        
         # Calculate rank vectors to Spearman correlation
-        rank_x = np.argsort(X[:, col])
-        rank_y = np.argsort(y)
+        rank_x = np.ndarray.argsort(X[:, col])
+        rank_y = np.ndarray.argsort(y)
         rank_dif = rank_x - rank_y
         
         if rho_spearman(rank_dif) < 0:
@@ -188,7 +190,7 @@ def c3(X, y):
         
         n_j.append(rank_dif.shape[0])
         
-    return min(n_j)/n
+    return min(n_j) / n
 
 
 def c4(X, y, min_resid=0.1):
@@ -213,13 +215,13 @@ def c4(X, y, min_resid=0.1):
     n = X.shape[0]
        
     while A and X.any():        
-        m = np.argmax([abs(spearmanr(X[:, j], y)[0]) for j in range(X.shape[1])])
+        m = np.ndarray.argmax(np.array([abs(spearmanr(X[:, j], y)[0]) for j in range(X.shape[1])]))
         A.pop()        
         id_remove = abs(sm.OLS(y, X[:, m]).fit().resid) > min_resid
         X = X[id_remove]
         y = y[id_remove]
       
-    return X.shape[0]/n      
+    return X.shape[0] / n      
 
 
 def s1(y, dist):
@@ -242,7 +244,7 @@ def s1(y, dist):
     edges = T.edges()
     edges_dist_norm = min_max(np.array([abs(y[i] - y[j]) for i, j in edges]))
 
-    return edges_dist_norm.sum()/len(edges)
+    return edges_dist_norm.sum() / len(edges)
         
 
 def s2(X, y):
@@ -262,20 +264,20 @@ def s2(X, y):
         Normalized input distribution mean value
     """
 
-    X_y = np.hstack((X,y.reshape(X.shape[0],1)))
-    X = X_y[X_y[:,-1].argsort()][:, :-1]
+    X_y = np.hstack((X,y.reshape(X.shape[0], 1)))
+    X = X_y[X_y[:, -1].argsort()][:, :-1]
     n = X.shape[0]    
     i = 1    
     d = list()
 
     while i < n:
-        d.append(np.linalg.norm(X[i,:]-X[i-1,:]))
+        d.append(np.linalg.norm(X[i, :]-X[i-1, :]))
         i = i + 1
 
-    return min_max(np.array(d)).sum()/(n-1)
+    return min_max(np.array(d)).sum() / (n - 1)
 
 
-def s3(X, y, dist_matrix):
+def s3(X, y, dist_matrix, metric='mse'):
     """
     Calculate the error of the nearest neighbor regressor.
 
@@ -291,20 +293,25 @@ def s3(X, y, dist_matrix):
     Return
     ------
     float:
-        Normalized 1-NN absolute error
+        Normalized 1-NN mean error
     """
 
     n = X.shape[0]    
-    e = list()
+    error = list()
      
     for i in range(n):
         i_nn = np.argmin(np.delete(dist_matrix[i, :], i))
-        e.append(abs(y[i]-y[i_nn]))
-    
-    return min_max(np.array(e)).sum()/n
+        error.append(y[i]-y[i_nn])
+
+    if metric == 'mae':
+        return min_max(np.abs(np.array(error))).sum() / n
+    if metric == 'mse':
+        return min_max(np.array(error)**2).sum() / n
+    if metric == 'rmse':
+        return min_max(np.sqrt(np.array(error)**2)).sum() / n
 
 
-def s4(X, y, random_state=0):
+def s4(X, y, random_state=0, metric='mse'):
     """
     Calculate the non-linearity of nearest neighbor regressor
 
@@ -320,7 +327,7 @@ def s4(X, y, random_state=0):
     Return
     ------
     float:
-        Normalized 1-NN absolute error
+        Normalized 1-NN error
     """
 
     seed(random_state)  
@@ -341,10 +348,14 @@ def s4(X, y, random_state=0):
         i = i + 1
 
     nearest_dist, nearest_ind = tree.query(X_, k=1)
-    abs_error = np.array([abs(y[int(nearest_ind[i])]-y_[i]) for i in range(y_.shape[0])])
-    abs_error_norm = min_max(abs_error)
+    error = np.array([y[int(nearest_ind[i])]-y_[i] for i in range(y_.shape[0])])
 
-    return abs_error_norm.sum()/n
+    if metric == 'mae':
+        return min_max(np.abs(np.array(error))).sum() / n
+    if metric == 'mse':
+        return min_max(np.array(error)**2).sum() / n
+    if metric == 'rmse':
+        return min_max(np.sqrt(np.array(error)**2)).sum() / n
 
 
 def l1(X, y, model):
@@ -363,8 +374,9 @@ def l1(X, y, model):
     Return
     ------
     float:
-        Normalized mean absolute error
+        Normalized mean error
     """
+
     res = model.resid
 
     return np.mean(res)   
@@ -394,10 +406,10 @@ def l2(X, y, model):
     # Normalize squared residuous
     res_norm = min_max(res**2)
     
-    return res_norm.sum()/n
+    return res_norm.sum() / n
 
 
-def l3(X, y, model, random_state=0):
+def l3(X, y, model, random_state=0, metric='mse'):
     """
     Calculate the non-linearity of a linear regressor
 
@@ -415,7 +427,7 @@ def l3(X, y, model, random_state=0):
     Return
     ------
     float:
-        Normalized mean squared error
+        Normalized mean error
     """
 
     seed(random_state)    
@@ -434,9 +446,14 @@ def l3(X, y, model, random_state=0):
         y_ = np.vstack((y_, y_i.reshape(1, 1)))
         i = i + 1
 
-    res_norm = min_max(abs(model.predict(X_) - y_.T))
+    error = model.predict(X_) - y_.T
 
-    return res_norm.sum()/n
+    if metric == 'mae':
+        return min_max(np.abs(np.array(error))).sum() / n
+    if metric == 'mse':
+        return min_max(np.array(error)**2).sum() / n
+    if metric == 'rmse':
+        return min_max(np.sqrt(np.array(error)**2)).sum() / n
 
 
 def t2(X):
@@ -454,19 +471,19 @@ def t2(X):
         Ratio between number of examples and number of features
     """
 
-    return X.shape[0]/X.shape[1]
+    return X.shape[0] / X.shape[1]
 
 
 def min_max(x):
     min_ = x.min()
-    return (x-min_)/(x.max()-min_)
+    return (x - min_) / (x.max() - min_)
 
 
 def main():
     boston = load_boston()
     X = boston["data"]
     y = boston["target"]
-    mf = MetaFeatures(dataset_name='Boston')
+    mf = MetaFeatures(dataset_name='Boston', metric='rmse')
 
     print(mf.fit(X, y))
 

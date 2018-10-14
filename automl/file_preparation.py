@@ -22,73 +22,94 @@ class PrepareDataset(object):
 
     def fit(self, X):
         self.dataset = X
-        self._remove_na()
-        self._remove_index_col()
-        self._remove_categorical_up_thresh()
-        self._imputer()
-        self._get_dummies()
+        self.__prepare_dataset()
     
     def fit_transform(self, X, y):
         self.fit(X)        
 
         return pd.concat([self.dataset, y], axis=1)    
     
-    def _remove_na(self):        
-        na_cond = self.dataset.apply(na_rate, axis=0) < self.na_values_ratio_theshold
-        true_cols = self.dataset.columns[na_cond.values]        
-        self.dataset = self.dataset[true_cols]
-
-    def _remove_index_col(self):
-        for col in self.dataset.columns:
-            is_numeric = self.dataset[col].dtype.kind in 'bifc'
-            if is_numeric:
-                first_lower_than_all = (self.dataset[col] < self.dataset[col][0]).sum()
-                first_diff_is_one = (self.dataset[col][1] - self.dataset[col][0]) == 1
-                if not first_lower_than_all and first_diff_is_one:
-                    self.dataset.drop(col, inplace=True, axis=1)
-
-
-    def _remove_categorical_up_thresh(self):        
-        for col in self.dataset.columns:
-            is_numeric = self.dataset[col].dtype.kind in 'bifc'
-            unique_thresh = unique_threshold(self.dataset[col],
-                                           self.n_unique_values_treshold)
-            #print(col, is_numeric, unique_thresh)
-            if is_numeric:
-                if unique_thresh:
-                    self.dataset[col] = self.dataset[col].astype('category')
-            else:
-                if unique_thresh:
-                    self.dataset[col] = self.dataset[col].astype('category')
-                else:
-                    self.dataset.drop(col, inplace=True, axis=1)
-    
-    def _imputer(self):
-        for col in self.dataset.columns:
-            is_numeric = self.dataset[col].dtype.kind in 'bifc'
-            has_na = na_rate(self.dataset[col]) > .0
-            
-            if is_numeric and has_na:
-                median = self.dataset[col].median()
-                self.dataset[col].fillna(median, inplace=True)            
-            else:
-                if has_na:
-                    mod = self.dataset[col].mode()[0]
-                    self.dataset[col].fillna(mod, inplace=True)
-    
-    def _get_dummies(self):
+    def __get_dummies(self):
         try:
             self.dataset = pd.get_dummies(self.dataset)
         except:
-            pass
+            pass    
+
+    def __prepare_dataset(self):
+        for col in self.dataset.columns:
+            series = self.dataset[col]
+
+            if is_sequential_like_index(series):
+                self.dataset.drop(col, inplace=True, axis=1)
+                continue
+
+            if is_na_ratio_up_thresh(series, self.na_values_ratio_theshold):
+                self.dataset.drop(col, inplace=True, axis=1)
+                continue
+
+            if is_categorical(series, self.n_unique_values_treshold):
+                if is_categorical_up_thresh(series, self.n_unique_values_treshold):
+                    self.dataset.drop(col, inplace=True, axis=1)
+                    continue
+                else:
+                    self.dataset[col] = self.dataset[col].astype('category')
+
+            self.dataset[col] = imputer(series)
+
+        self.__get_dummies()
+
+
+def imputer(series):
+    is_numeric = series.dtype.kind in 'bifc'
+    has_na = na_rate(series) > .0
     
+    if is_numeric and has_na:
+        median = series.median()
+        return series.fillna(median)            
+    else:
+        if has_na:
+            mod = self.dataset[col].mode()[0]
+            return series.fillna(mod)
+    return series
+
+
+def is_sequential_like_index(series):
+    is_numeric = series.dtype.kind in 'bifc'
+    if is_numeric:
+        first_lower_than_all = (series < series).sum()
+        first_diff_is_one = (series[1] - series[0]) == 1
+        if not first_lower_than_all and first_diff_is_one:
+            return True
+
+    return False
+
+
+def is_na_ratio_up_thresh(series, threshold):    
+    if na_rate(series) > threshold:
+        return True
+
+    return False
+
+
+def is_categorical(series, threshold):
+    is_numeric = series.dtype.kind in 'bifc'
+    below_thresh = unique_threshold(series, threshold)
+    if is_numeric and not below_thresh:
+        return False
+
+    return True
+
+
+def is_categorical_up_thresh(series, threshold):
+    below_thresh = unique_threshold(series, threshold)
+    return not below_thresh
+
 
 def na_rate(series):
     return series.isna().sum()/series.shape[0]
 
 
 def unique_threshold(series, threshold=.1):
-    #print(len(series.unique())/len(series))
     return len(series.unique())/len(series) < threshold
 
 
@@ -109,6 +130,7 @@ def main():
     df = prepdata.fit_transform(df.iloc[:,:-1], df.iloc[:,-1])
     
     print(f'After preparation:\n{df.tail()}')
+
 
 if __name__ == '__main__':
     main()
