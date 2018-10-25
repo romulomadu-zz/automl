@@ -4,6 +4,9 @@ import numpy as np
 from glob import glob
 from automl.meta_features import MetaFeatures
 
+import warnings
+warnings.filterwarnings('ignore')
+
 # Inputs
 pathinput = input('Enter datasets repository path:')
 if not pathinput:
@@ -33,4 +36,4 @@ for file_path in files_list:
 	mf.fit(X, y)
 	meta_list.append(mf.get_params())
 
-pd.DataFrame(meta_list).to_csv(pathoutput+'meta_features.csv')
+pd.DataFrame(meta_list).dropna().to_csv(pathoutput + 'meta_features.csv')

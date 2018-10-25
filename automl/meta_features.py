@@ -9,7 +9,13 @@ from sklearn.neighbors import KDTree
 from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
 from scipy.spatial.distance import pdist, squareform
-from automl.utils import _pprint
+from scipy.stats import rankdata
+
+try:
+    from automl.utils import _pprint
+except:
+    from utils import _pprint
+
 
 __author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1.0'
@@ -83,7 +89,7 @@ class MetaFeatures(BaseMeta):
             's2': s2(X, y),
             's3': s3(X, y, dist_matrix, self.metric),
             's4': s4(X, y, metric=self.metric),
-            't2': t2(X),
+            't2': t2(X)
         }
 
         return params_dict
@@ -165,30 +171,26 @@ def c3(X, y):
         n = d.shape[0]        
         return 1 - 6 * (d**2).sum() / (n**3 - n) 
     
+    rank_all_y = rankdata(y)
+    rank_all_y_inv = rank_all_y[::-1]
     for col in range(ncol):        
         # Calculate rank vectors to Spearman correlation
-        rank_x = np.ndarray.argsort(X[:, col])
-        rank_y = np.ndarray.argsort(y)
+        rank_x = rankdata(X[:, col])
+        rank_y = rank_all_y
         rank_dif = rank_x - rank_y
         
         if rho_spearman(rank_dif) < 0:
-            rank_y = rank_y[::-1]
-            rank_dif = rank_x-rank_y            
+            rank_y = rank_all_y_inv
+            rank_dif = rank_x - rank_y            
 
         while abs(rho_spearman(rank_dif)) <= 0.9:
             id_r = np.ndarray.argmax(abs(rank_dif))
-            
-            for id_j in range(rank_dif.shape[0]):                
-                if rank_x[id_j] > rank_x[id_r] and rank_y[id_j] < rank_y[id_r]:
-                    rank_dif[id_j] = rank_dif[id_j]-1
-                if rank_y[id_j] > rank_y[id_r] and rank_x[id_j] < rank_x[id_r]:
-                    rank_dif[id_j] = rank_dif[id_j]+1
-            
+            rank_dif = rank_dif + (rank_y > rank_y[id_r]) - (rank_x > rank_x[id_r])            
             rank_dif = np.delete(rank_dif, id_r)
             rank_x = np.delete(rank_x, id_r)
             rank_y = np.delete(rank_y, id_r)
         
-        n_j.append(rank_dif.shape[0])
+        n_j.append(len(rank_dif))
         
     return min(n_j) / n
 
@@ -211,17 +213,21 @@ def c4(X, y, min_resid=0.1):
         and total number fo points.
     """
 
-    A = [X.shape[1]-i for i in range(X.shape[1])]
+    A = list(range(X.shape[1]))
     n = X.shape[0]
        
-    while A and X.any():        
-        m = np.ndarray.argmax(np.array([abs(spearmanr(X[:, j], y)[0]) for j in range(X.shape[1])]))
-        A.pop()        
+    while A and X.any():
+        rho_list = [abs(spearmanr(X[:, j], y)[0]) if j in A else .0 for j in range(X.shape[1])]
+        
+        if sum(rho_list) == .0:
+            break                    
+        m = np.ndarray.argmax(np.array(rho_list))
+        A.remove(m)
         id_remove = abs(sm.OLS(y, X[:, m]).fit().resid) > min_resid
         X = X[id_remove]
         y = y[id_remove]
       
-    return X.shape[0] / n      
+    return len(y) / n      
 
 
 def s1(y, dist):
@@ -301,14 +307,12 @@ def s3(X, y, dist_matrix, metric='mse'):
      
     for i in range(n):
         i_nn = np.argmin(np.delete(dist_matrix[i, :], i))
+        # Add 1 to i_nn in case equals to i
+        if i==i_nn:
+            i_nn = i_nn + 1
         error.append(y[i]-y[i_nn])
 
-    if metric == 'mae':
-        return min_max(np.abs(np.array(error))).sum() / n
-    if metric == 'mse':
-        return min_max(np.array(error)**2).sum() / n
-    if metric == 'rmse':
-        return min_max(np.sqrt(np.array(error)**2)).sum() / n
+    return compute_metric(np.array(error), metric)
 
 
 def s4(X, y, random_state=0, metric='mse'):
@@ -350,12 +354,7 @@ def s4(X, y, random_state=0, metric='mse'):
     nearest_dist, nearest_ind = tree.query(X_, k=1)
     error = np.array([y[int(nearest_ind[i])]-y_[i] for i in range(y_.shape[0])])
 
-    if metric == 'mae':
-        return min_max(np.abs(np.array(error))).sum() / n
-    if metric == 'mse':
-        return min_max(np.array(error)**2).sum() / n
-    if metric == 'rmse':
-        return min_max(np.sqrt(np.array(error)**2)).sum() / n
+    return compute_metric(error, metric)
 
 
 def l1(X, y, model):
@@ -379,7 +378,7 @@ def l1(X, y, model):
 
     res = model.resid
 
-    return np.mean(res)   
+    return np.mean(min_max(abs(res)))
 
 
 def l2(X, y, model):
@@ -401,12 +400,11 @@ def l2(X, y, model):
         Normalized mean squared error
     """
 
-    n = X.shape[0]
     res = model.resid
     # Normalize squared residuous
-    res_norm = min_max(res**2)
+    res_norm = res**2
     
-    return res_norm.sum() / n
+    return np.mean(min_max(res_norm))
 
 
 def l3(X, y, model, random_state=0, metric='mse'):
@@ -448,12 +446,7 @@ def l3(X, y, model, random_state=0, metric='mse'):
 
     error = model.predict(X_) - y_.T
 
-    if metric == 'mae':
-        return min_max(np.abs(np.array(error))).sum() / n
-    if metric == 'mse':
-        return min_max(np.array(error)**2).sum() / n
-    if metric == 'rmse':
-        return min_max(np.sqrt(np.array(error)**2)).sum() / n
+    return compute_metric(error, metric)
 
 
 def t2(X):
@@ -474,6 +467,17 @@ def t2(X):
     return X.shape[0] / X.shape[1]
 
 
+def compute_metric(arr, metric):
+    n = max(arr.shape)
+    # Select metric to return
+    if metric == 'mae':
+        return min_max(np.abs(np.array(arr))).sum() / n
+    if metric == 'mse':
+        return min_max(np.array(arr)**2).sum() / n
+    if metric == 'rmse':
+        return min_max(np.sqrt(np.array(arr)**2)).sum() / n
+
+
 def min_max(x):
     min_ = x.min()
     return (x - min_) / (x.max() - min_)
@@ -483,7 +487,7 @@ def main():
     boston = load_boston()
     X = boston["data"]
     y = boston["target"]
-    mf = MetaFeatures(dataset_name='Boston', metric='rmse')
+    mf = MetaFeatures(dataset_name='Boston', metric='mse')
 
     print(mf.fit(X, y))
 

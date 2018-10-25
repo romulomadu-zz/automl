@@ -7,6 +7,8 @@ from glob import glob
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
+
 
 __author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1.0'
@@ -25,9 +27,13 @@ class PrepareDataset(object):
         self.__prepare_dataset()
     
     def fit_transform(self, X, y):
-        self.fit(X)        
+        self.fit(X) 
+        y = imputer(y)
+        y = y.values.reshape((y.shape[0],1))
+        y_scaled = MinMaxScaler().fit_transform(y)
+        y_scaled = pd.Series(y_scaled.T[0], name='Target')     
 
-        return pd.concat([self.dataset, y], axis=1)    
+        return pd.concat([self.dataset, y_scaled], axis=1)    
     
     def __get_dummies(self):
         try:
@@ -37,7 +43,7 @@ class PrepareDataset(object):
 
     def __prepare_dataset(self):
         for col in self.dataset.columns:
-            series = self.dataset[col]
+            series = self.dataset[col].copy()
 
             if is_sequential_like_index(series):
                 self.dataset.drop(col, inplace=True, axis=1)
@@ -52,11 +58,12 @@ class PrepareDataset(object):
                     self.dataset.drop(col, inplace=True, axis=1)
                     continue
                 else:
-                    self.dataset[col] = self.dataset[col].astype('category')
+                    self.dataset.at[:, col] = self.dataset[col].astype('category').values
 
-            self.dataset[col] = imputer(series)
+            self.dataset.at[:, col] = imputer(series).values
 
         self.__get_dummies()
+        self.dataset = normalize(self.dataset)
 
 
 def imputer(series):
@@ -112,6 +119,16 @@ def na_rate(series):
 def unique_threshold(series, threshold=.1):
     return len(series.unique())/len(series) < threshold
 
+
+def normalize(df):
+    X = df.values #returns a numpy array
+    scaler = MinMaxScaler()
+    X_scaled = scaler.fit_transform(X)
+    return pd.DataFrame(X_scaled)
+
+def min_max(x):
+    min_ = x.min()
+    return (x - min_) / (x.max() - min_)
 
 def main():
     #alphabet = 'abcdefghijklmnopqrstuyxwz'
