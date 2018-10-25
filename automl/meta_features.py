@@ -1,4 +1,5 @@
 
+import multiprocessing
 import networkx as nx
 import numpy as np
 import statsmodels.api as sm
@@ -10,6 +11,7 @@ from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import rankdata
+from joblib import Parallel, delayed
 
 try:
     from automl.utils import _pprint
@@ -165,32 +167,12 @@ def c3(X, y):
     ncol = X.shape[1]
     n = X.shape[0]    
     n_j = list()
-
-    # Calculate rho of Spearman
-    def rho_spearman(d):
-        n = d.shape[0]        
-        return 1 - 6 * (d**2).sum() / (n**3 - n) 
     
     rank_all_y = rankdata(y)
     rank_all_y_inv = rank_all_y[::-1]
-    for col in range(ncol):        
-        # Calculate rank vectors to Spearman correlation
-        rank_x = rankdata(X[:, col])
-        rank_y = rank_all_y
-        rank_dif = rank_x - rank_y
-        
-        if rho_spearman(rank_dif) < 0:
-            rank_y = rank_all_y_inv
-            rank_dif = rank_x - rank_y            
-
-        while abs(rho_spearman(rank_dif)) <= 0.9:
-            id_r = np.ndarray.argmax(abs(rank_dif))
-            rank_dif = rank_dif + (rank_y > rank_y[id_r]) - (rank_x > rank_x[id_r])            
-            rank_dif = np.delete(rank_dif, id_r)
-            rank_x = np.delete(rank_x, id_r)
-            rank_y = np.delete(rank_y, id_r)
-        
-        n_j.append(len(rank_dif))
+    
+    num_cores = multiprocessing.cpu_count() 
+    n_j = Parallel(n_jobs=num_cores)(delayed(removeCorrId)(X[:,col], rank_all_y, rank_all_y_inv) for col in range(ncol))
         
     return min(n_j) / n
 
@@ -215,9 +197,12 @@ def c4(X, y, min_resid=0.1):
 
     A = list(range(X.shape[1]))
     n = X.shape[0]
+    mcol = X.shape[1]
+    num_cores = multiprocessing.cpu_count()
        
     while A and X.any():
-        rho_list = [abs(spearmanr(X[:, j], y)[0]) if j in A else .0 for j in range(X.shape[1])]
+        pos_rho_list = Parallel(n_jobs=num_cores)(delayed(calculateCorr)(X[:, j], y, j, A) for j in range(mcol))
+        rho_list = [t[1] for t in sorted(pos_rho_list)]
         
         if sum(rho_list) == .0:
             break                    
@@ -481,6 +466,40 @@ def compute_metric(arr, metric):
 def min_max(x):
     min_ = x.min()
     return (x - min_) / (x.max() - min_)
+
+
+def rho_spearman(d):
+    n = d.shape[0]        
+    return 1 - 6 * (d**2).sum() / (n**3 - n) 
+
+
+def removeCorrId(x_j, rank_all_y, rank_all_y_inv):
+    # Calculate rank vectors to Spearman correlation
+    rank_x = rankdata(x_j)
+    rank_y = rank_all_y
+    rank_dif = rank_x - rank_y
+    
+    if rho_spearman(rank_dif) < 0:
+        rank_y = rank_all_y_inv
+        rank_dif = rank_x - rank_y            
+
+    while abs(rho_spearman(rank_dif)) <= 0.9:
+        id_r = np.ndarray.argmax(abs(rank_dif))
+        rank_dif = rank_dif + (rank_y > rank_y[id_r]) - (rank_x > rank_x[id_r])            
+        rank_dif = np.delete(rank_dif, id_r)
+        rank_x = np.delete(rank_x, id_r)
+        rank_y = np.delete(rank_y, id_r)
+    
+    return len(rank_dif)
+
+
+def calculateCorr(x_j, y, j, A):
+    if j in A:
+        corr = abs(spearmanr(x_j, y)[0])
+    else:
+        corr = .0
+    
+    return (j, corr)    
 
 
 def main():
