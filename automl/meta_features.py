@@ -20,6 +20,9 @@ try:
 except:
     from utils import _pprint
 
+import warnings
+warnings.filterwarnings("ignore")
+
 
 __author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1.0'
@@ -176,7 +179,7 @@ def c3(X, y):
     num_cores = multiprocessing.cpu_count() 
     n_j = Parallel(n_jobs=num_cores)(delayed(removeCorrId)(X[:,col], rank_all_y, rank_all_y_inv) for col in range(ncol))
         
-    return min(n_j) / n
+    return min(-np.array(n_j) + n) / n
 
 
 def c4(X, y, min_resid=0.1):
@@ -485,13 +488,13 @@ def removeCorrId(x_j, rank_all_y, rank_all_y_inv):
         rank_y = rank_all_y_inv
         rank_dif = rank_x - rank_y            
 
-    while abs(rho_spearman(rank_dif)) <= 0.9:
+    while abs(rho_spearman(rank_dif)) <= .9:
         id_r = np.ndarray.argmax(abs(rank_dif))
         rank_dif = rank_dif + (rank_y > rank_y[id_r]) - (rank_x > rank_x[id_r])            
         rank_dif = np.delete(rank_dif, id_r)
         rank_x = np.delete(rank_x, id_r)
         rank_y = np.delete(rank_y, id_r)
-    
+
     return len(rank_dif)
 
 
@@ -509,6 +512,12 @@ def main():
     X = boston["data"]
     y = boston["target"]
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
+
+   
+    import pandas as pd
+    dataset = pd.read_csv('test.csv').values
+    y = dataset[:, -1]
+    X = dataset[:, :-1]
 
     print(mf.fit(X, y))
 
