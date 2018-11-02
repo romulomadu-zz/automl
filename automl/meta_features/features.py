@@ -1,4 +1,4 @@
-
+    
 # coding=utf-8
 
 import multiprocessing
@@ -18,7 +18,9 @@ from joblib import Parallel, delayed
 try:
     from automl.utils import _pprint
 except:
-    from ..utils import _pprint
+    import sys
+    sys.path.append("..")
+    from utils import _pprint
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -87,8 +89,8 @@ class MetaFeatures(BaseMeta):
             '_dataset_name' : self.dataset_name,
             'c1': c1(X, y),
             'c2': c2(X, y),
-            'c3': c3(X, y),
-            'c4': c4(X, y),
+            'c3': c3(X, y, n_jobs=32),
+            'c4': c4(X, y, n_jobs=32),
             'l1': l1(X, y, model),
             'l2': l2(X, y, model),
             'l3': l3(X, y, model, metric=self.metric),
@@ -151,7 +153,7 @@ def c2(X, y):
     return np.mean(corr_list)
     
 
-def c3(X, y):
+def c3(X, y, n_jobs=1):
     """
     Calculate the individual feature efficiency.
 
@@ -176,13 +178,15 @@ def c3(X, y):
     rank_all_y = rankdata(y)
     rank_all_y_inv = rank_all_y[::-1]
     
-    num_cores = multiprocessing.cpu_count() 
-    n_j = Parallel(n_jobs=num_cores)(delayed(removeCorrId)(X[:,col], rank_all_y, rank_all_y_inv) for col in range(ncol))
+    num_cores = multiprocessing.cpu_count()
+    if num_cores < n_jobs:
+        n_jobs = num_cores
+    n_j = Parallel(n_jobs=n_jobs)(delayed(removeCorrId)(X[:,col], rank_all_y, rank_all_y_inv) for col in range(ncol))
         
     return min(-np.array(n_j) + n) / n
 
 
-def c4(X, y, min_resid=0.1):
+def c4(X, y, min_resid=0.1, n_jobs=1):
     """
     Calculate the collective feature efficiency.
 
@@ -204,9 +208,11 @@ def c4(X, y, min_resid=0.1):
     n = X.shape[0]
     mcol = X.shape[1]
     num_cores = multiprocessing.cpu_count()
+    if num_cores < n_jobs:
+        n_jobs = num_cores
        
     while A and X.any():
-        pos_rho_list = Parallel(n_jobs=num_cores)(delayed(calculateCorr)(X[:, j], y, j, A) for j in range(mcol))
+        pos_rho_list = Parallel(n_jobs=n_jobs)(delayed(calculateCorr)(X[:, j], y, j, A) for j in range(mcol))
         rho_list = [t[1] for t in sorted(pos_rho_list)]
         
         if sum(rho_list) == .0:
@@ -458,6 +464,7 @@ def t2(X):
 
 
 def compute_metric(arr, metric):
+    """Compute normalized chosen metric."""
     n = max(arr.shape)
     # Select metric to return
     if metric == 'mae':
@@ -468,7 +475,8 @@ def compute_metric(arr, metric):
         return min_max(np.sqrt(np.array(arr)**2)).sum() / n
 
 
-def min_max(x):    
+def min_max(x):
+    """Min-max scaler."""    
     min_ = x.min()
     max_ = x.max()
     if min_ == max_:
@@ -477,12 +485,13 @@ def min_max(x):
 
 
 def rho_spearman(d):
+    """Calculate rho of Spearman."""    
     n = d.shape[0]        
     return 1 - 6 * (d**2).sum() / (n**3 - n) 
 
 
 def removeCorrId(x_j, rank_all_y, rank_all_y_inv):
-    # Calculate rank vectors to Spearman correlation
+    """Calculate rank vectors to Spearman correlation."""
     rank_x = rankdata(x_j)
     rank_y = rank_all_y
     rank_dif = rank_x - rank_y
@@ -502,6 +511,7 @@ def removeCorrId(x_j, rank_all_y, rank_all_y_inv):
 
 
 def calculateCorr(x_j, y, j, A):
+    """Calculate absolute Spearman correlation for x_j in set A."""
     if j in A:
         corr = abs(spearmanr(x_j, y)[0])
     else:
@@ -515,12 +525,6 @@ def main():
     X = boston["data"]
     y = boston["target"]
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
-
-   
-    import pandas as pd
-    dataset = pd.read_csv('tecator  .csv').values
-    y = dataset[:, -1]
-    X = dataset[:, :-1]
 
     print(mf.fit(X, y))
 
