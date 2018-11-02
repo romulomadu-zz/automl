@@ -1,5 +1,8 @@
 # coding=utf-8
 
+import sys
+sys.path.append("..")
+
 import pandas as pd
 import numpy as np
 
@@ -12,7 +15,7 @@ warnings.filterwarnings('ignore')
 # Inputs
 pathinput = input('Enter datasets repository path:')
 if not pathinput:
-	pathinput = '/media/romulo/C4B4FA64B4FA57FE//bases_preparadas//'
+	pathinput = '/media/romulo/C4B4FA64B4FA57FE//datasets_prep//'
 type_ext = input('Enter extension type (default=.csv):')
 if not type_ext:
 	type_ext = '.csv'

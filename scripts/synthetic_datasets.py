@@ -34,8 +34,7 @@ def generate_sin(filename, c=1, w=1, n=500, m=1, noise_variance=0):
 
 if __name__ == '__main__':
 
-	#path = '/media/romulo/C4B4FA64B4FA57FE//bases_preparadas//'
-	path = '../base_prep//'
+	path = '../datasets_prep//'
 	n = 500
 	n_features = [1, 2, 5, 10]
 	n_poly_degree = [1, 3, 5]

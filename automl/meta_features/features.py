@@ -18,7 +18,7 @@ from joblib import Parallel, delayed
 try:
     from automl.utils import _pprint
 except:
-    from utils import _pprint
+    from ..utils import _pprint
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -468,9 +468,12 @@ def compute_metric(arr, metric):
         return min_max(np.sqrt(np.array(arr)**2)).sum() / n
 
 
-def min_max(x):
+def min_max(x):    
     min_ = x.min()
-    return (x - min_) / (x.max() - min_)
+    max_ = x.max()
+    if min_ == max_:
+        return x / min_
+    return (x - min_) / (max_- min_)
 
 
 def rho_spearman(d):
@@ -515,7 +518,7 @@ def main():
 
    
     import pandas as pd
-    dataset = pd.read_csv('test.csv').values
+    dataset = pd.read_csv('tecator  .csv').values
     y = dataset[:, -1]
     X = dataset[:, :-1]
 
