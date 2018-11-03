@@ -86,19 +86,19 @@ class MetaFeatures(BaseMeta):
         dist_matrix = squareform(pdist(X, metric='euclidean'))
         # Feed and Calculate indicators
         params_dict = {
-            '_dataset_name' : self.dataset_name,
-            'c1': c1(X, y),
-            'c2': c2(X, y),
-            'c3': c3(X, y, n_jobs=32),
-            'c4': c4(X, y, n_jobs=32),
-            'l1': l1(X, y, model),
-            'l2': l2(X, y, model),
-            'l3': l3(X, y, model, metric=self.metric),
-            's1': s1(y, dist_matrix),
-            's2': s2(X, y),
-            's3': s3(X, y, dist_matrix, self.metric),
-            's4': s4(X, y, metric=self.metric),
-            't2': t2(X)
+            'dataset' : self.dataset_name,
+            'm_c1': c1(X, y),
+            'm_c2': c2(X, y),
+            'm_c3': c3(X, y, n_jobs=32),
+            'm_c4': c4(X, y, n_jobs=32),
+            'm_l1': l1(X, y, model),
+            'm_l2': l2(X, y, model),
+            'm_l3': l3(X, y, model, metric=self.metric),
+            'm_s1': s1(y, dist_matrix),
+            'm_s2': s2(X, y),
+            'm_s3': s3(X, y, dist_matrix, self.metric),
+            'm_s4': s4(X, y, metric=self.metric),
+            'm_t2': t2(X)
         }
 
         return params_dict
