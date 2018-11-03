@@ -1,12 +1,10 @@
 __pycache__
 .ipynb_checkpoints
 *.ipynb
-*.txt
 artigos/
 local/
 .idea
 .gitignore
 datasets/
-datasets_prep/
 
 
