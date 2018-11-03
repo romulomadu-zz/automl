@@ -1,8 +1,10 @@
 import pandas as pd
+import re
 
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.utils.validation import (check_is_fitted, check_array, FLOAT_DTYPES)
 from sklearn.preprocessing import LabelBinarizer, MinMaxScaler
+from sklearn.pipeline import make_pipeline
 
 
 class RemoveNaColumns(TransformerMixin):
@@ -227,9 +229,42 @@ class DFMinMaxScaler(MinMaxScaler):
         return pd.DataFrame(X, columns=self.classes_)
 
 
-if __name__ == '__main__':
-    from sklearn.pipeline import make_pipeline
+def process_file(file_path, cat_proportion=.05, na_proportion=.1):
+    # For files downloaded from OpenML
+    with open(file_path) as f:
+        data = f.read()
+    with open(file_path, 'w') as f:
+        f.write(re.sub('{|}', '', data))
 
+    try:
+        dataset = pd.read_csv(file_path).replace(
+            {'?': np.nan}).apply(pd.to_numeric, errors='ignore')
+    except:
+        dataset = pd.read_csv(file_path)
+
+    def clean_str(x):
+        try:
+            return float(x.strip().split(' ')[-1])
+        except:
+            return x
+
+    dataset = dataset.applymap(clean_str)
+
+    pipe = make_pipeline(
+                 RemoveNaColumns(na_proportion=na_proportion), 
+                 RemoveCategorical(cat_proportion=cat_proportion), 
+                 RemoveSequential(), 
+                 ImputerByColumn(cat_proportion=cat_proportion),
+                 DFOneHotEncoder(cat_proportion=cat_proportion),
+                 DFMinMaxScaler()                
+                )
+    X = dataset.iloc[:, :-1]
+    y = dataset.iloc[:, -1]
+    #dataset_out = prepdata.fit_transform(X, y)
+    return pipe.fit_transform(X, y)
+
+
+if __name__ == '__main__':
     pipe = make_pipeline(
                      RemoveNaColumns(na_proportion=.1), 
                      RemoveCategorical(cat_proportion=.05), 

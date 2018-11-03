@@ -4,7 +4,8 @@ from .transformers import (
                            RemoveSequential,
                            ImputerByColumn,
                            DFOneHotEncoder,
-                           DFMinMaxScaler
+                           DFMinMaxScaler,
+                           process_file
                           )
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
            'RemoveSequential',
            'ImputerByColumn',
            'DFOneHotEncoder',
-           'DFMinMaxScaler'
+           'DFMinMaxScaler',
+           'process_file'
           ]
