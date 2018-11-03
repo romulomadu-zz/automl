@@ -31,13 +31,8 @@ if not pathoutput:
 files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 
-# Loop and prepare dataset and save
-# in output repo
-for file_path in files_list:
-    file_name = file_path.split('/')[-1]
-    print(file_name)
-
-    # For files downloaded form OpenML
+def process_file(file_path):
+    # For files downloaded from OpenML
     with open(file_path) as f:
         data = f.read()
     with open(file_path, 'w') as f:
@@ -57,8 +52,6 @@ for file_path in files_list:
 
     dataset = dataset.applymap(clean_str)
 
-    #prepdata = PrepareDataset(n_unique_values_treshold=.05,
-    #                          na_values_ratio_theshold=.10)
     cat_proportion = .05
     pipe = make_pipeline(
                  RemoveNaColumns(na_proportion=.1), 
@@ -71,6 +64,12 @@ for file_path in files_list:
     X = dataset.iloc[:, :-1]
     y = dataset.iloc[:, -1]
     #dataset_out = prepdata.fit_transform(X, y)
-    dataset_out = pipe.fit_transform(X, y)
+    return pipe.fit_transform(X, y)
+# Loop and prepare dataset and save
+# in output repo
+for file_path in files_list:
+    file_name = file_path.split('/')[-1]
+    print(file_name)
+    dataset_out = process_file(file_path)
 
     dataset_out.to_csv(pathoutput + file_name)
