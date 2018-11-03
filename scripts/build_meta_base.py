@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import sys
+import os
+import re
 sys.path.append("..")
 
 import pandas as pd
@@ -33,6 +35,7 @@ def make_search(X, y, params, method='grid', random_state=0):
 
     return search
 
+cpath = os.getcwd()
 
 # Inputs
 prepinput = input('Datasets are preprocessed? (yes or no): ')
@@ -40,20 +43,20 @@ if not prepinput:
 	prepinput = 'yes'
 pathinput = input('Enter datasets repository path:')
 if not pathinput:
-#	pathinput = '/media/romulo/C4B4FA64B4FA57FE//datasets_prep//'
-	pathinput = '/home/romulo/TCC-PEDS/datasets_prep/'
+	pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
 type_ext = input('Enter extension type (default=.csv):')
 if not type_ext:
 	type_ext = '.csv'
 pathoutput = input('Enter repository to save "meta.csv":')
 if not pathoutput:
 #	pathoutput = '/media/romulo/C4B4FA64B4FA57FE//meta_db//'
-	pathoutput = '/home/romulo/TCC-PEDS/meta_db/'
+	pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
 
 # Get file in directory
 files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 meta_list = list()
+
 # Loop and prepare dataset and save
 # in output repo
 for file_path in files_list:
