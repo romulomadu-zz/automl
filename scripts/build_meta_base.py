@@ -3,7 +3,6 @@
 import sys
 import os
 import re
-import logging
 sys.path.append("..")
 
 import pandas as pd
@@ -21,10 +20,15 @@ from tqdm import tqdm
 
 import warnings
 warnings.filterwarnings('ignore')
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
+import logging
 cpath = os.getcwd()
-
-logging.basicConfig(filename=re.sub('scripts', '', cpath) + '/logs/log.log',level=logging.INFO)
+logging.basicConfig(
+	filename=re.sub('scripts', '', cpath) + '/logs/log.log',
+	format='%(asctime)s %(levelname)-8s %(message)s', 
+	level=logging.INFO, 
+	datefmt='%Y-%m-%d %H:%M:%S')
 logging.info('Application Run: build_meta_base')
 
 
@@ -68,7 +72,8 @@ meta_list = list()
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
-	logging.info(f'Dataset: {file_name.split('.')[0]}')	
+	dataset_name = file_name.split('.')[0]
+	logging.info(f'Dataset: {dataset_name}')	
 	is_prep = prepinput == 'yes'
 	if is_prep:
 		dataset = pd.read_csv(file_path, index_col=0)
