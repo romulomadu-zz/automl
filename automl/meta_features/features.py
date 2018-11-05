@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-__author__ = 'Rômulo Rodrigues <romulomadu@gmail.com>'
+__author__ = 'Romulo Rodrigues <romulomadu@gmail.com>'
 __version__ = '0.1.0'
 
 

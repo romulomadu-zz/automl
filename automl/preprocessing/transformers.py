@@ -8,6 +8,10 @@ from sklearn.preprocessing import LabelBinarizer, MinMaxScaler
 from sklearn.pipeline import make_pipeline
 
 
+__author__ = 'Romulo Rodrigues <romulomadu@gmail.com>'
+__version__ = '0.1.0'
+
+
 class RemoveNaColumns(TransformerMixin):
     """
     Transformer to remove columns from dataset which the number of NaN values in proporrtion of database size exceeds a passed value between 0 and 1.
