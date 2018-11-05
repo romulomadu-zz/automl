@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import re
 
 from sklearn.base import TransformerMixin, BaseEstimator
@@ -230,26 +231,33 @@ class DFMinMaxScaler(MinMaxScaler):
 
 
 def process_file(file_path, cat_proportion=.05, na_proportion=.1):
-    # For files downloaded from OpenML
-    with open(file_path) as f:
-        data = f.read()
-    with open(file_path, 'w') as f:
-        f.write(re.sub('{|}', '', data))
+    '''Process files downloaded from OpenML'''
 
-    try:
-        dataset = pd.read_csv(file_path).replace(
-            {'?': np.nan}).apply(pd.to_numeric, errors='ignore')
-    except:
-        dataset = pd.read_csv(file_path)
+    def remove_brackets(file_path):
+        with open(file_path) as f:
+            data = f.read()
+        with open(file_path, 'w') as f:
+            f.write(re.sub('{|}', '', data))
 
-    def clean_str(x):
+    def remove_interrogation(file_path):
+        try:
+            return pd.read_csv(file_path).replace(
+        {'?': np.nan}).apply(pd.to_numeric, errors='ignore')
+        except Exception as e:
+            return pd.read_csv(file_path)
+
+    def remove_empty_spaces(x):
         try:
             return float(x.strip().split(' ')[-1])
         except:
             return x
 
-    dataset = dataset.applymap(clean_str)
+    # File preprocess
+    remove_brackets(file_path)
+    dataset = remove_interrogation(file_path)
+    dataset = dataset.applymap(remove_empty_spaces)
 
+    # Dataset preprocess
     pipe = make_pipeline(
                  RemoveNaColumns(na_proportion=na_proportion), 
                  RemoveCategorical(cat_proportion=cat_proportion), 
@@ -260,8 +268,10 @@ def process_file(file_path, cat_proportion=.05, na_proportion=.1):
                 )
     X = dataset.iloc[:, :-1]
     y = dataset.iloc[:, -1]
-    #dataset_out = prepdata.fit_transform(X, y)
-    return pipe.fit_transform(X, y)
+    dataset_out = pipe.fit_transform(X)
+    dataset_out[y.name] = y.values
+    
+    return dataset_out
 
 
 if __name__ == '__main__':
