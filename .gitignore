@@ -6,4 +6,4 @@ local/
 .idea
 .gitignore
 datasets/
-logs
+logs/

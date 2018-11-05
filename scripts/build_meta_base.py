@@ -68,14 +68,14 @@ meta_list = list()
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
-	#print(file_name)
-
+	logging.info(f'Dataset: {file_name.split('.')[0]}')	
 	is_prep = prepinput == 'yes'
 	if is_prep:
 		dataset = pd.read_csv(file_path, index_col=0)
 	else:
 		dataset = process_file(file_path)
 
+	# Separe features from target
 	X = dataset.iloc[:,:-1].values
 	y =  dataset.iloc[:,-1].values
 
@@ -113,7 +113,7 @@ for file_path in tqdm(files_list, unit='files'):
 
 meta = pathoutput + 'meta.csv'
 
-logging.info('Writing file.')
+logging.info(f'Writing file in {meta}')
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
 logging.info('Done.')
 
