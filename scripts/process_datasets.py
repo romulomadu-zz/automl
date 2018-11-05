@@ -9,8 +9,9 @@ import numpy as np
 
 from glob import glob
 #from automl.file_preparation import PrepareDataset
-from automl.preprocessing import *
+from automl.preprocessing import process_file
 from sklearn.pipeline import make_pipeline
+from tqdm import tqdm
 
 
 import warnings
@@ -31,45 +32,11 @@ if not pathoutput:
 files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 
-def process_file(file_path):
-    # For files downloaded from OpenML
-    with open(file_path) as f:
-        data = f.read()
-    with open(file_path, 'w') as f:
-        f.write(re.sub('{|}', '', data))
-
-    try:
-        dataset = pd.read_csv(file_path).replace(
-            {'?': np.nan}).apply(pd.to_numeric, errors='ignore')
-    except:
-        dataset = pd.read_csv(file_path)
-
-    def clean_str(x):
-        try:
-            return float(x.strip().split(' ')[-1])
-        except:
-            return x
-
-    dataset = dataset.applymap(clean_str)
-
-    cat_proportion = .05
-    pipe = make_pipeline(
-                 RemoveNaColumns(na_proportion=.1), 
-                 RemoveCategorical(cat_proportion=cat_proportion), 
-                 RemoveSequential(), 
-                 ImputerByColumn(cat_proportion=cat_proportion),
-                 DFOneHotEncoder(cat_proportion=cat_proportion),
-                 DFMinMaxScaler()                
-                )
-    X = dataset.iloc[:, :-1]
-    y = dataset.iloc[:, -1]
-    #dataset_out = prepdata.fit_transform(X, y)
-    return pipe.fit_transform(X, y)
 # Loop and prepare dataset and save
 # in output repo
-for file_path in files_list:
+for file_path in tqdm(files_list, unit='files'):
     file_name = file_path.split('/')[-1]
-    print(file_name)
+    #print(file_name)
     dataset_out = process_file(file_path)
 
     dataset_out.to_csv(pathoutput + file_name)
