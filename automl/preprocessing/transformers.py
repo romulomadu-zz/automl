@@ -274,6 +274,9 @@ def process_file(file_path, cat_proportion=.05, na_proportion=.1):
     y = dataset.iloc[:, -1]
     dataset_out = pipe.fit_transform(X)
     dataset_out[y.name] = y.values
+    dataset_out = dataset_out.dropna()    
+    scaler_y = MinMaxScaler()
+    dataset_out[y.name] = scaler_y.fit_transform(dataset_out[y.name].values.reshape(-1,1))
     
     return dataset_out
 
