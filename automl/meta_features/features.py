@@ -4,13 +4,13 @@
 import multiprocessing
 import networkx as nx
 import numpy as np
-import statsmodels.api as sm
 
 from random import uniform, seed
 from scipy.stats.stats import pearsonr, spearmanr
 from sklearn.neighbors import KDTree
 from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import LinearRegression
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import rankdata
 from joblib import Parallel, delayed
@@ -82,7 +82,8 @@ class MetaFeatures(BaseMeta):
 
         # Pre calculate some indicators inputs
         X = MinMaxScaler().fit_transform(X)
-        model = sm.OLS(y, X).fit()
+        model = LinearRegression().fit(X, y)
+        resid = y - model.predict(X)
         dist_matrix = squareform(pdist(X, metric='euclidean'))
         # Feed and Calculate indicators
         params_dict = {
@@ -91,8 +92,8 @@ class MetaFeatures(BaseMeta):
             'm_c2': c2(X, y),
             'm_c3': c3(X, y, n_jobs=32),
             'm_c4': c4(X, y, n_jobs=32),
-            'm_l1': l1(X, y, model),
-            'm_l2': l2(X, y, model),
+            'm_l1': l1(X, y, resid),
+            'm_l2': l2(X, y, resid),
             'm_l3': l3(X, y, model, metric=self.metric),
             'm_s1': s1(y, dist_matrix),
             'm_s2': s2(X, y),
@@ -219,8 +220,14 @@ def c4(X, y, min_resid=0.1, n_jobs=1):
             break                    
         m = np.ndarray.argmax(np.array(rho_list))
         A.remove(m)
-        id_remove = abs(sm.OLS(y, X[:, m]).fit().resid) > min_resid
-        X = X[id_remove]
+        model = LinearRegression()
+        x_j = X[:, m].reshape((-1, 1))
+        y = y.reshape((-1, 1))
+        model.fit(x_j, y)
+
+        resid = y - model.predict(x_j)
+        id_remove = abs(resid.flatten()) > min_resid
+        X = X[id_remove, :]
         y = y[id_remove]
       
     return len(y) / n      
@@ -244,7 +251,7 @@ def s1(y, dist):
     G = nx.from_numpy_matrix(dist)
     T = nx.minimum_spanning_tree(G)
     edges = T.edges()
-    edges_dist_norm = min_max(np.array([abs(y[i] - y[j]) for i, j in edges]))
+    edges_dist_norm = np.array([abs(y[i] - y[j]) for i, j in edges])
 
     return edges_dist_norm.sum() / len(edges)
         
@@ -276,7 +283,7 @@ def s2(X, y):
         d.append(np.linalg.norm(X[i, :]-X[i-1, :]))
         i = i + 1
 
-    return min_max(np.array(d)).sum() / (n - 1)
+    return np.array(d).sum() / (n - 2)
 
 
 def s3(X, y, dist_matrix, metric='mse'):
@@ -353,7 +360,7 @@ def s4(X, y, random_state=0, metric='mse'):
     return compute_metric(error, metric)
 
 
-def l1(X, y, model):
+def l1(X, y, resid):
     """
     Calculate the mean absolute error of OLS.
 
@@ -363,21 +370,18 @@ def l1(X, y, model):
         2d-array with features columns
     y : numpy.array
         Array of response values
-    model : statsmodels.regression.linear_model.RegressionResultsWrapper
-       Ordinary least square model between X,y
+    model :np.array
+       Linear regression model residuals between X,y
 
     Return
     ------
     float:
-        Normalized mean error
+        Mean absolute error
     """
-
-    res = model.resid
-
-    return np.mean(min_max(abs(res)))
+    return np.mean(abs(resid))
 
 
-def l2(X, y, model):
+def l2(X, y, resid):
     """
     Calculate the mean squared error of OLS.
 
@@ -387,20 +391,18 @@ def l2(X, y, model):
         2d-array with features columns
     y : numpy.array
         Array of response values
-    model : statsmodels.regression.linear_model.RegressionResultsWrapper
-       Ordinary least square model between X,y
-
+    model :np.array
+       Linear regression model residuals between X,y
     Return
     ------
     float:
-        Normalized mean squared error
+        Mean squared error
     """
 
-    res = model.resid
     # Normalize squared residuous
-    res_norm = res**2
+    res_norm = resid ** 2
     
-    return np.mean(min_max(res_norm))
+    return np.mean(res_norm)
 
 
 def l3(X, y, model, random_state=0, metric='mse'):
@@ -424,23 +426,28 @@ def l3(X, y, model, random_state=0, metric='mse'):
         Normalized mean error
     """
 
-    seed(random_state)    
-    n = X.shape[0]    
-    X_y = np.hstack((X, y.reshape(X.shape[0], 1)))
-    X = X_y[X_y[:, -1].argsort()][:, :-1]
-    y = sorted(y)    
-    i = 1    
-    X_ = X[0, :].reshape(1, X.shape[1])
-    y_ = y[0].reshape(1, 1)
-    
-    while i < n:        
-        x_i = np.array([uniform(X[i, j], X[i-1, j]) for j in range(X.shape[1])])
-        X_ = np.vstack((X_, x_i.reshape(1, X.shape[1])))
-        y_i = np.array([uniform(y[i], y[i-1])])
-        y_ = np.vstack((y_, y_i.reshape(1, 1)))
-        i = i + 1
+    np.random.seed(random_state) 
+    n, m = X.shape
+    y = y.flatten()
+    idx_sorted_y = y.argsort()
+    X_sorted = X[idx_sorted_y, :]
+    y_sorted  = y[idx_sorted_y]
+    i = 1
+    X_list = list()
+    y_list = list()
 
-    error = model.predict(X_) - y_.T
+    while i < n:
+        x_i = np.array([uniform(X_sorted[i, j], X_sorted[i-1, j]) 
+                        for j in range(m)])
+        y_i = np.array([uniform(y_sorted[i], y_sorted[i-1])])
+
+        X_list.append(x_i)
+        y_list.append(y_i)
+        i = i + 1
+    X_ = np.array(X_list)
+    y_ = np.array(y_list)   
+
+    error = model.predict(X_).reshape((n-1,)) - np.array(y_).reshape((n-1,))
 
     return compute_metric(error, metric)
 
@@ -468,11 +475,11 @@ def compute_metric(arr, metric):
     n = max(arr.shape)
     # Select metric to return
     if metric == 'mae':
-        return min_max(np.abs(np.array(arr))).sum() / n
+        return np.abs(np.array(arr)).sum() / n
     if metric == 'mse':
-        return min_max(np.array(arr)**2).sum() / n
+        return (np.array(arr) ** 2).sum() / (n - 1)
     if metric == 'rmse':
-        return min_max(np.sqrt(np.array(arr)**2)).sum() / n
+        return (np.sqrt(np.array(arr) ** 2)).sum() / n
 
 
 def min_max(x):
@@ -524,6 +531,11 @@ def main():
     boston = load_boston()
     X = boston["data"]
     y = boston["target"]
+    scaler_X = MinMaxScaler()
+    scaler_y = MinMaxScaler()
+    X = scaler_X.fit_transform(X)
+    y = scaler_X.fit_transform(y.reshape(-1, 1))
+
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
 
     print(mf.fit(X, y))
