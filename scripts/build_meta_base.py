@@ -86,7 +86,7 @@ for file_path in tqdm(files_list, unit='files'):
 
 	# Get Meta features
 	logging.info('Getting meta-features.')
-	mf = MetaFeatures(dataset_name=file_name.split('.')[0], metric='rmse')
+	mf = MetaFeatures(dataset_name=re.sub('.csv', '', file_name), metric='rmse')
 	mf.fit(X, y)
 	meta_instance = mf.get_params()
 
@@ -108,11 +108,11 @@ for file_path in tqdm(files_list, unit='files'):
 	#meta_instance['p_random_search'] = model.best_params_
 	#meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
 
-	logging.info('Bayes Search.')
-	model = make_search(X_train, y_train, bayes_params(), method='bayes')
-	y_pred = model.predict(X_test)
-	meta_instance['p_bayes_search'] = model.best_params_
-	meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
+	#logging.info('Bayes Search.')
+	#model = make_search(X_train, y_train, bayes_params(), method='bayes')
+	#y_pred = model.predict(X_test)
+	#meta_instance['p_bayes_search'] = model.best_params_
+	#meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
 
 	meta_list.append(meta_instance)
 
