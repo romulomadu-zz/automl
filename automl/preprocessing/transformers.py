@@ -186,7 +186,7 @@ class DFOneHotEncoder(RemoveCategorical):
                 if cols.shape[1] == 1:
                     series_list.append(pd.Series(cols.flatten(), name=col.name))
                 else:
-                    df = pd.DataFrame(cols, columns=list(map(lambda x: f'{i}_{x}', self.encoders[i].classes_)))
+                    df = pd.DataFrame(cols, columns=list(map(lambda x: '{:}_{:}'.format(i, x), self.encoders[i].classes_)))
                     series_list.append(df)
             else:
                 series_list.append(col)
