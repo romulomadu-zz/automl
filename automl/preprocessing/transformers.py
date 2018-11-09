@@ -291,10 +291,10 @@ if __name__ == '__main__':
                      DFMinMaxScaler()                
                     )
     df = pd.read_csv('/media/romulo/C4B4FA64B4FA57FE//datasets//dataset_2190_cholesterol.csv')
-    print(f'Before preparation:\n{df.tail()}\n')
+    print('Before preparation:\n{:}\n'.format(df.tail()))
 
     df = pipe.fit_transform(df.iloc[:,:-1], df.iloc[:,-1])
-    print(f'After preparation:\n{df.tail()}')
+    print('After preparation:\n{:}'.format(df.tail()))
 
 
 
