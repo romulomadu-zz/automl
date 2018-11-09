@@ -21,7 +21,6 @@ def generate_poly(filename, degree=1, n=500, m=1, noise_variance=0):
 	pd.DataFrame(dataset, columns=list(range(m+1))).to_csv(filename)
 
 
-
 def generate_sin(filename, c=1, w=1, n=500, m=1, noise_variance=0):
 	X = np.random.rand(n,m)
 	phase = np.random.uniform(0, np.pi, (1,m))
@@ -45,13 +44,13 @@ if __name__ == '__main__':
 	for m in n_features:
 		for d in n_poly_degree:
 			for s in n_std:
-				name = f'{path}poly_{d}_{m}_{s}.csv'
-				print(f'Created at {name}')
+				name = '{:}poly_{:}_{:}_{:}.csv'.format(path, d, m, s)
+				print('Created at {:}'.format(name))
 				generate_poly(name, degree=d, m=m, noise_variance=s)
 
 	for m in n_features:
 		for w in n_freq:
 			for s in n_std:
-				name = f'{path}sin_{w}_{m}_{s}.csv'
-				print(f'Created at {name}')
+				name = '{:}sin_{:}_{:}_{:}.csv'.format(path, w, m, s)
+				print('Created at {:}'.format(name))
 				generate_sin(name, w=w, m=m, noise_variance=s)

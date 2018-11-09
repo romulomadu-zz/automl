@@ -73,7 +73,7 @@ meta_list = list()
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
 	dataset_name = file_name.split('.')[0]
-	logging.info(f'Dataset: {dataset_name}')	
+	logging.info('Dataset: {:}'.format(dataset_name))	
 	is_prep = prepinput == 'yes'
 	if is_prep:
 		dataset = pd.read_csv(file_path, index_col=0)
@@ -118,7 +118,7 @@ for file_path in tqdm(files_list, unit='files'):
 
 meta = pathoutput + 'meta.csv'
 
-logging.info(f'Writing file in {meta}')
+logging.info('Writing file in {:}'.format(meta))
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
 logging.info('Done.')
 
