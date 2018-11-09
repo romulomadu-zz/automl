@@ -11,7 +11,7 @@ def nmse(y_pred, y_true, verbose=0):
 
 	error = mean_squared_error(y_true, y_pred) / mean_squared_error(y_pred, y_mean)
 	if verbose:
-		print(f'NMSE: {nmse_}')
+		print('NMSE: {:}'.format(error))
 	return error
 
 
