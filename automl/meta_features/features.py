@@ -5,7 +5,7 @@ import multiprocessing
 import networkx as nx
 import numpy as np
 
-from random import uniform, seed
+from random import uniform, seed, randint
 from scipy.stats.stats import pearsonr, spearmanr
 from sklearn.neighbors import KDTree
 from sklearn.datasets import load_boston
@@ -426,7 +426,7 @@ def l3(X, y, model, random_state=0, metric='mse'):
         Normalized mean error
     """
 
-    np.random.seed(random_state) 
+    seed(random_state) 
     n, m = X.shape
     y = y.flatten()
     idx_sorted_y = y.argsort()
@@ -436,17 +436,23 @@ def l3(X, y, model, random_state=0, metric='mse'):
     X_list = list()
     y_list = list()
 
-    while i < n:
-        x_i = np.array([uniform(X_sorted[i, j], X_sorted[i-1, j]) 
-                        for j in range(m)])
+    while i < n:        
+        x_i_list = list()
+        for j in range(m):
+            uniques_values = np.unique(X_sorted[:, j])
+            if len(uniques_values) <= 2:
+                x_i_list.append(randint(0, 1))
+            else:
+                x_i_list.append(uniform(X_sorted[i, j], X_sorted[i-1, j]))
+        x_i = np.array(x_i_list)
         y_i = np.array([uniform(y_sorted[i], y_sorted[i-1])])
-
+        
         X_list.append(x_i)
         y_list.append(y_i)
         i = i + 1
+
     X_ = np.array(X_list)
     y_ = np.array(y_list)   
-
     error = model.predict(X_).reshape((n-1,)) - np.array(y_).reshape((n-1,))
 
     return compute_metric(error, metric)
@@ -535,7 +541,7 @@ def main():
     scaler_y = MinMaxScaler()
     X = scaler_X.fit_transform(X)
     y = scaler_X.fit_transform(y.reshape(-1, 1))
-
+    
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
 
     print(mf.fit(X, y))
