@@ -39,7 +39,7 @@ def make_search(X, y, params, method='grid', random_state=0):
     if method=='grid':
         search = GridSearchCV(model, **params, n_jobs=num_cores)
     elif method=='random':
-        search = 	RandomizedSearchCV(model, **params, n_jobs=num_cores)        
+        search = RandomizedSearchCV(model, **params, n_jobs=num_cores) 
     elif method=='bayes':
         search = BayesSearchCV(model, **params, n_jobs=num_cores)
     search.fit(X, y)
@@ -96,23 +96,23 @@ for file_path in tqdm(files_list, unit='files'):
 	# - Bayesian Search
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-	#logging.info('Grid search.')
-	#model = make_search(X_train, y_train, grid_params(), method='grid')
-	#y_pred = model.predict(X_test)
-	#meta_instance['p_grid_search'] = model.best_params_
-	#meta_instance['nmse_grid_search'] = nmse(y_pred, y_test)
+	logging.info('Grid search.')
+	model = make_search(X_train, y_train, grid_params(), method='grid')
+	y_pred = model.predict(X_test)
+	meta_instance['p_grid_search'] = model.best_params_
+	meta_instance['nmse_grid_search'] = nmse(y_pred, y_test)
 
-	#logging.info('Random Search.')
-	#model = make_search(X_train, y_train, random_params(), method='random')
-	#y_pred = model.predict(X_test)
-	#meta_instance['p_random_search'] = model.best_params_
-	#meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
+	logging.info('Random Search.')
+	model = make_search(X_train, y_train, random_params(), method='random')
+	y_pred = model.predict(X_test)
+	meta_instance['p_random_search'] = model.best_params_
+	meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
 
-	#logging.info('Bayes Search.')
-	#model = make_search(X_train, y_train, bayes_params(), method='bayes')
-	#y_pred = model.predict(X_test)
-	#meta_instance['p_bayes_search'] = model.best_params_
-	#meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
+	logging.info('Bayes Search.')
+	model = make_search(X_train, y_train, bayes_params(), method='bayes')
+	y_pred = model.predict(X_test)
+	meta_instance['p_bayes_search'] = model.best_params_
+	meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
 
 	meta_list.append(meta_instance)
 
