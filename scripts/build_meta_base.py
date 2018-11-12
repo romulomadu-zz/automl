@@ -47,21 +47,25 @@ def make_search(X, y, params, method='grid', random_state=0):
     return search
 
 
-# Inputs
-prepinput = input('Datasets are preprocessed? (yes or no): ')
-if not prepinput:
-	prepinput = 'yes'
-pathinput = input('Enter datasets repository path:')
-if not pathinput:
-	#pathinput = '/media/romulo/C4B4FA64B4FA57FE//datasets_prep//'
-	pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
-type_ext = input('Enter extension type (default=.csv):')
-if not type_ext:
-	type_ext = '.csv'
-pathoutput = input('Enter repository to save "meta.csv":')
-if not pathoutput:
-#	pathoutput = '/media/romulo/C4B4FA64B4FA57FE//meta_db//'
-	pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
+# With inputs
+#prepinput = input('Datasets are preprocessed? (yes or no): ')
+#if not prepinput:
+#	prepinput = 'yes'
+#pathinput = input('Enter datasets repository path:')
+#if not pathinput:
+#	pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
+#type_ext = input('Enter extension type (default=.csv):')
+#if not type_ext:
+#	type_ext = '.csv'
+#pathoutput = input('Enter repository to save "metabase.csv":')
+#if not pathoutput:
+#	pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
+
+# Without inputs
+prepinput = 'yes'
+type_ext = '.csv'
+pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
+pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
 
 # Get file in directory
 files_path = pathinput + '*' + type_ext
@@ -84,11 +88,7 @@ for file_path in tqdm(files_list, unit='files'):
 	X = dataset.iloc[:,:-1].values
 	y =  dataset.iloc[:,-1].values
 
-	# Get Meta features
-	logging.info('Getting meta-features.')
-	mf = MetaFeatures(dataset_name=re.sub('.csv', '', file_name), metric='rmse')
-	mf.fit(X, y)
-	meta_instance = mf.get_params()
+	meta_instance = {'dataset': file_name}
 
 	# Train SVR models with:
 	# - Grid Search
