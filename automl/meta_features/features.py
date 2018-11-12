@@ -11,6 +11,7 @@ from sklearn.neighbors import KDTree
 from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import rankdata
 from joblib import Parallel, delayed
@@ -49,9 +50,8 @@ class MetaFeatures(BaseMeta):
     Meta feature evaluator for regression problems.
     """
     
-    def __init__(self, dataset_name='None', random_state=0, metric='mse'):        
+    def __init__(self, dataset_name='None', random_state=0, metric='mse'):
         self.random_state = random_state
-        self.params_ = {}
         self.dataset_name = dataset_name
         self.metric = metric
             
@@ -83,6 +83,7 @@ class MetaFeatures(BaseMeta):
         # Pre calculate some indicators inputs
         X = MinMaxScaler().fit_transform(X)
         model = LinearRegression().fit(X, y)
+        svr = SVR(kernel='linear').fit(X, y)
         resid = y - model.predict(X)
         dist_matrix = squareform(pdist(X, metric='euclidean'))
         # Feed and Calculate indicators
@@ -94,7 +95,7 @@ class MetaFeatures(BaseMeta):
             'm_c4': c4(X, y, n_jobs=32),
             'm_l1': l1(X, y, resid),
             'm_l2': l2(X, y, resid),
-            'm_l3': l3(X, y, model, metric=self.metric),
+            'm_l3': l3(X, y, svr, metric=self.metric),
             'm_s1': s1(y, dist_matrix),
             'm_s2': s2(X, y),
             'm_s3': s3(X, y, dist_matrix, self.metric),
@@ -233,7 +234,7 @@ def c4(X, y, min_resid=0.1, n_jobs=1):
     return len(y) / n      
 
 
-def s1(y, dist):
+def s1(y, dist_matrix):
     """
     Calculate the output distribution.
 
@@ -248,7 +249,7 @@ def s1(y, dist):
         Normalized output distribution mean value
     """
 
-    G = nx.from_numpy_matrix(dist)
+    G = nx.from_numpy_matrix(dist_matrix)
     T = nx.minimum_spanning_tree(G)
     edges = T.edges()
     edges_dist_norm = np.array([abs(y[i] - y[j]) for i, j in edges])
@@ -541,7 +542,7 @@ def main():
     scaler_y = MinMaxScaler()
     X = scaler_X.fit_transform(X)
     y = scaler_X.fit_transform(y.reshape(-1, 1))
-    
+
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
 
     print(mf.fit(X, y))
