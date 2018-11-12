@@ -6,6 +6,7 @@ from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.utils.validation import (check_is_fitted, check_array, FLOAT_DTYPES)
 from sklearn.preprocessing import LabelBinarizer, MinMaxScaler
 from sklearn.pipeline import make_pipeline
+from sklearn.decomposition import PCA
 
 
 __author__ = 'Romulo Rodrigues <romulomadu@gmail.com>'
@@ -69,7 +70,7 @@ class RemoveCategorical(TransformerMixin):
 
     def is_categorical(self, col):
         up_thresh = self.get_cat_proportion(col) > self.cat_proportion
-        return not (self.is_numeric(col) and up_thresh)
+        return not (self.is_numeric(col))
 
     def get_cat_proportion(self, col):
         return len(col.unique()) / col.shape[0]
@@ -234,6 +235,35 @@ class DFMinMaxScaler(MinMaxScaler):
         return pd.DataFrame(X, columns=self.classes_)
 
 
+class DFPCA(PCA):    
+    """
+    Wraps sklearn's MinMaxScaler class to use pandas DataFrame.
+    """
+
+    def fit_transform(self, X, y=None):
+        """Fit the model with X and apply the dimensionality reduction on X.
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training data, where n_samples is the number of samples
+            and n_features is the number of features.
+        y : Ignored
+        Returns
+        -------
+        X_new : array-like, shape (n_samples, n_components)
+        """
+        U, S, V = self._fit(X)
+        U = U[:, :self.n_components_]
+
+        if self.whiten:
+            # X_new = X * V / S * sqrt(n_samples) = U * sqrt(n_samples)
+            U *= sqrt(X.shape[0] - 1)
+        else:
+            # X_new = X * V = U * S * V^T * V = U * S
+            U *= S[:self.n_components_]
+
+        return pd.DataFrame(U)
+
 def process_file(file_path, cat_proportion=.05, na_proportion=.1):
     '''Process files downloaded from OpenML'''
 
@@ -268,7 +298,7 @@ def process_file(file_path, cat_proportion=.05, na_proportion=.1):
                  RemoveSequential(), 
                  ImputerByColumn(cat_proportion=cat_proportion),
                  DFOneHotEncoder(cat_proportion=cat_proportion),
-                 DFMinMaxScaler()                
+                 DFMinMaxScaler()
                 )
     X = dataset.iloc[:, :-1]
     y = dataset.iloc[:, -1]
@@ -288,7 +318,7 @@ if __name__ == '__main__':
                      RemoveSequential(), 
                      ImputerByColumn(cat_proportion=.05),
                      DFOneHotEncoder(cat_proportion=.05),
-                     DFMinMaxScaler()                
+                     DFMinMaxScaler()                                     
                     )
     df = pd.read_csv('/media/romulo/C4B4FA64B4FA57FE//datasets//dataset_2190_cholesterol.csv')
     print('Before preparation:\n{:}\n'.format(df.tail()))
