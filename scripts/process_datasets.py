@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 
 from glob import glob
-#from automl.file_preparation import PrepareDataset
 from automl.preprocessing import process_file
 from sklearn.pipeline import make_pipeline
 from tqdm import tqdm
@@ -36,7 +35,8 @@ files_list = glob(files_path)
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
     file_name = file_path.split('/')[-1]
+
     #print(file_name)
-    dataset_out = process_file(file_path)
+    dataset_out = process_file(file_path, 0.05)
 
     dataset_out.to_csv(pathoutput + file_name)
