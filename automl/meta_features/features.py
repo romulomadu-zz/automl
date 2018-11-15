@@ -81,7 +81,7 @@ class MetaFeatures(BaseMeta):
         """
 
         # Pre calculate some indicators inputs
-        X = MinMaxScaler().fit_transform(X)
+        #X = MinMaxScaler().fit_transform(X)
         model = LinearRegression().fit(X, y)
         svr = SVR(kernel='linear').fit(X, y)
         resid = y - model.predict(X)
@@ -338,22 +338,34 @@ def s4(X, y, random_state=0, metric='mse'):
         Normalized 1-NN error
     """
 
-    seed(random_state)  
+    seed(random_state)
     tree = KDTree(X)
-    n = X.shape[0]    
-    X_y = np.hstack((X,y.reshape(X.shape[0], 1)))
-    X = X_y[X_y[:, -1].argsort()][:, :-1]
-    y = sorted(y)    
-    i = 1    
-    X_ = X[0, :].reshape(1, X.shape[1])
-    y_ = y[0].reshape(1, 1)
-    
+    n, m = X.shape
+    y = y.flatten()
+    idx_sorted_y = y.argsort()
+    X_sorted = X[idx_sorted_y, :]
+    y_sorted  = y[idx_sorted_y]
+    i = 1
+    X_list = list()
+    y_list = list()
+
     while i < n:        
-        x_i = np.array([uniform(X[i, j], X[i-1, j]) for j in range(X.shape[1])])
-        X_ = np.vstack((X_, x_i.reshape(1, X.shape[1])))
-        y_i = np.array([uniform(y[i], y[i-1])])
-        y_ = np.vstack((y_, y_i.reshape(1, 1)))
+        x_i_list = list()
+        for j in range(m):
+            uniques_values = np.unique(X_sorted[:, j])
+            if len(uniques_values) <= 2:
+                x_i_list.append(randint(0, 1))
+            else:
+                x_i_list.append(uniform(X_sorted[i, j], X_sorted[i-1, j]))
+        x_i = np.array(x_i_list)
+        y_i = np.array([uniform(y_sorted[i], y_sorted[i-1])])
+        
+        X_list.append(x_i)
+        y_list.append(y_i)
         i = i + 1
+
+    X_ = np.array(X_list)
+    y_ = np.array(y_list)   
 
     nearest_dist, nearest_ind = tree.query(X_, k=1)
     error = np.array([y[int(nearest_ind[i])]-y_[i] for i in range(y_.shape[0])])
