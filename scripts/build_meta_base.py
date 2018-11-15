@@ -75,8 +75,11 @@ meta_list = list()
 def check_in_dir(dataset_name):
 	files_path = pathoutput + '*' + type_ext
 	files_list = glob(files_path)
-	datasets = [re.sub('.csv', '', file.split('_')[-1]).split('/')[-1] for file in files_list]
-	print(datasets)
+	rcsv = lambda x: re.sub('.csv', '', x)
+	rbar = lambda x: x.split('/')[-1]
+	rfile =  lambda x: re.sub('meta_grid_', '', x)
+	datasets = [rfile(rbar(rcsv(file))) for file in files_list]
+
 	return dataset_name in datasets
 
 print(check_in_dir('features'))
@@ -86,6 +89,7 @@ print(check_in_dir('features'))
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
 	dataset_name = re.sub('.csv', '', file_name)
+
 	if check_in_dir(dataset_name):
 		continue
 
