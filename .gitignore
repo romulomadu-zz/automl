@@ -7,3 +7,4 @@ local/
 .gitignore
 datasets/
 logs/
+datasets_synthetic/
