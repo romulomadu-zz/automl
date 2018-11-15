@@ -24,7 +24,7 @@ def grid_params():
 	param_grid = {
 		'param_grid': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
 		'scoring': make_scorer(nmse, greater_is_better=False),
-		'verbose': 2,
+		'verbose': 3,
 		'cv': 10
 	}
 
