@@ -72,11 +72,23 @@ files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 meta_list = list()
 
+def check_in_dir(dataset_name):
+	files_path = pathoutput + '*' + type_ext
+	files_list = glob(files_path)
+	datasets = [re.sub('.csv', '', file.split('_')[-1]).split('/')[-1] for file in files_list]
+	print(datasets)
+	return dataset_name in datasets
+
+print(check_in_dir('features'))
+
 # Loop and prepare dataset and save
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
-	dataset_name = file_name.split('.')[0]
+	dataset_name = re.sub('.csv', '', file_name)
+	if check_in_dir(dataset_name):
+		continue
+
 	logging.info('Dataset: {:}'.format(dataset_name))	
 	is_prep = prepinput == 'yes'
 	if is_prep:
@@ -102,23 +114,26 @@ for file_path in tqdm(files_list, unit='files'):
 	meta_instance['p_grid_search'] = model.best_params_
 	meta_instance['nmse_grid_search'] = nmse(y_pred, y_test)
 
-	logging.info('Random Search.')
-	model = make_search(X_train, y_train, random_params(), method='random')
-	y_pred = model.predict(X_test)
-	meta_instance['p_random_search'] = model.best_params_
-	meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
+	#logging.info('Random Search.')
+	#model = make_search(X_train, y_train, random_params(), method='random')
+	#y_pred = model.predict(X_test)
+	#meta_instance['p_random_search'] = model.best_params_
+	#meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
 
-	logging.info('Bayes Search.')
-	model = make_search(X_train, y_train, bayes_params(), method='bayes')
-	y_pred = model.predict(X_test)
-	meta_instance['p_bayes_search'] = model.best_params_
-	meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
+	#logging.info('Bayes Search.')
+	#model = make_search(X_train, y_train, bayes_params(), method='bayes')
+	#y_pred = model.predict(X_test)
+	#meta_instance['p_bayes_search'] = model.best_params_
+	#meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
 
 	meta_list.append(meta_instance)
 
-meta = pathoutput + 'meta.csv'
+	meta = pathoutput + 'meta_grid_{:}.csv'.format(dataset_name)
 
-logging.info('Writing file in {:}'.format(meta))
-pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
-logging.info('Done.')
+	logging.info('Writing file in {:}'.format(meta))
+	pd.DataFrame([meta_instance]).dropna().set_index('dataset').to_csv(meta)
+	logging.info('Done.')
+
+
+
 
