@@ -6,16 +6,19 @@ import pandas as pd
 np.random.seed(0)
 
 
-def generate_poly(filename, degree=1, n=500, m=1, noise_variance=0):
+def generate_poly(filename, degree_list=[1], n=500, m=1, noise_variance=0):
 	X = np.random.rand(n,m)
-	beta = np.random.rand(degree+1, 1)
+	beta = np.random.rand(m, len(degree_list) + 1)
 
 	list_y = list()
 	for i in range(n):
 		list_x =list()
-		for p in range(degree+1):
-			list_x.append(X[i,:] ** p)
-		y_i = np.array(list_x).T.dot(beta).sum() + np.random.normal(0, noise_variance)
+		for j in range(m):
+			list_x_j = list()
+			for p in degree_list:
+				list_x_j.append(X[i,j] ** p)			
+			list_x.append([1] + list_x_j)
+		y_i = (np.array(list_x) * beta).sum() + np.random.normal(0, noise_variance)
 		list_y.append(y_i)
 	dataset = np.concatenate([X, np.array(list_y).reshape(n, 1)], axis=1)
 	pd.DataFrame(dataset, columns=list(range(m+1))).to_csv(filename)
@@ -34,7 +37,7 @@ def generate_sin(filename, c=1, w=1, n=500, m=1, noise_variance=0):
 
 if __name__ == '__main__':
 
-	path = '/media/romulo/C4B4FA64B4FA57FE//datasets_prep//'
+	path = '//home//romulo//TCC-PEDS//datasets_preprocessed//'
 	n = 500
 	n_features = [1, 2, 5, 10]
 	n_poly_degree = [1, 3, 5]
@@ -42,11 +45,11 @@ if __name__ == '__main__':
 	n_freq = [1, 3]
 
 	for m in n_features:
-		for d in n_poly_degree:
+		for d in range(len(n_poly_degree)):
 			for s in n_std:
-				name = '{:}poly_{:}_{:}_{:}.csv'.format(path, d, m, s)
+				name = '{:}poly_{:}_{:}_{:}.csv'.format(path, n_poly_degree[d], m, s)
 				print('Created at {:}'.format(name))
-				generate_poly(name, degree=d, m=m, noise_variance=s)
+				generate_poly(name, degree_list=n_poly_degree[:d+1], m=m, noise_variance=s)
 
 	for m in n_features:
 		for w in n_freq:
