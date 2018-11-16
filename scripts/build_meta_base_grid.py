@@ -75,11 +75,8 @@ meta_list = list()
 def check_in_dir(dataset_name):
 	files_path = pathoutput + '*' + type_ext
 	files_list = glob(files_path)
-	rcsv = lambda x: re.sub('.csv', '', x)
-	rbar = lambda x: x.split('/')[-1]
-	rfile =  lambda x: re.sub('meta_grid_', '', x)
-	datasets = [rfile(rbar(rcsv(file))) for file in files_list]
-
+	datasets = [re.sub('.csv', '', file.split('_')[-1]).split('/')[-1] for file in files_list]
+	print(datasets)
 	return dataset_name in datasets
 
 print(check_in_dir('features'))
@@ -89,7 +86,6 @@ print(check_in_dir('features'))
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
 	dataset_name = re.sub('.csv', '', file_name)
-
 	if check_in_dir(dataset_name):
 		continue
 
@@ -131,8 +127,9 @@ for file_path in tqdm(files_list, unit='files'):
 	#meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
 
 	meta_list.append(meta_instance)
+	prefix = 'meta_grid_'
 
-	meta = pathoutput + 'meta_grid_{:}.csv'.format(dataset_name)
+	meta = pathoutput + '{:}{:}.csv'.format(prefix, dataset_name)
 
 	logging.info('Writing file in {:}'.format(meta))
 	pd.DataFrame([meta_instance]).dropna().set_index('dataset').to_csv(meta)

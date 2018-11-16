@@ -72,26 +72,11 @@ files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 meta_list = list()
 
-def check_in_dir(dataset_name):
-	files_path = pathoutput + '*' + type_ext
-	files_list = glob(files_path)
-	rcsv = lambda x: re.sub('.csv', '', x)
-	rbar = lambda x: x.split('/')[-1]
-	rfile =  lambda x: re.sub('meta_grid_', '', x)
-	datasets = [rfile(rbar(rcsv(file))) for file in files_list]
-
-	return dataset_name in datasets
-
-print(check_in_dir('features'))
-
 # Loop and prepare dataset and save
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
 	file_name = file_path.split('/')[-1]
 	dataset_name = re.sub('.csv', '', file_name)
-
-	if check_in_dir(dataset_name):
-		continue
 
 	logging.info('Dataset: {:}'.format(dataset_name))	
 	is_prep = prepinput == 'yes'
@@ -104,7 +89,7 @@ for file_path in tqdm(files_list, unit='files'):
 	X = dataset.iloc[:,:-1].values
 	y =  dataset.iloc[:,-1].values
 
-	meta_instance = {'dataset': file_name}
+	meta_instance = {'dataset': dataset_name}
 
 	# Train SVR models with:
 	# - Grid Search
@@ -112,28 +97,16 @@ for file_path in tqdm(files_list, unit='files'):
 	# - Bayesian Search
 	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-	logging.info('Grid search.')
-	model = make_search(X_train, y_train, grid_params(), method='grid')
+	logging.info('Bayes Search.')
+	model = make_search(X_train, y_train, bayes_params(), method='bayes')
 	y_pred = model.predict(X_test)
-	meta_instance['p_grid_search'] = model.best_params_
-	meta_instance['nmse_grid_search'] = nmse(y_pred, y_test)
-
-	#logging.info('Random Search.')
-	#model = make_search(X_train, y_train, random_params(), method='random')
-	#y_pred = model.predict(X_test)
-	#meta_instance['p_random_search'] = model.best_params_
-	#meta_instance['nmse_random_search'] = nmse(y_pred, y_test)
-
-	#logging.info('Bayes Search.')
-	#model = make_search(X_train, y_train, bayes_params(), method='bayes')
-	#y_pred = model.predict(X_test)
-	#meta_instance['p_bayes_search'] = model.best_params_
-	#meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
+	meta_instance['p_bayes_search'] = model.best_params_
+	meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
 
 	meta_list.append(meta_instance)
 
-	meta = pathoutput + 'meta_grid_{:}.csv'.format(dataset_name)
+meta = pathoutput + 'meta_bayes.csv'
 
-	logging.info('Writing file in {:}'.format(meta))
-	pd.DataFrame([meta_instance]).dropna().set_index('dataset').to_csv(meta)
-	logging.info('Done.')
+logging.info('Writing file in {:}'.format(meta))
+pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
+logging.info('Done.')

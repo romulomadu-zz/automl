@@ -80,7 +80,7 @@ for file_path in tqdm(files_list, unit='files'):
 	#
 	meta_list.append(meta_instance)
 
-meta = pathoutput + 'meta.csv'
+meta = pathoutput + 'meta_features.csv'
 
 logging.info('Writing file in {:}'.format(meta))
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
