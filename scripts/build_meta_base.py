@@ -133,7 +133,3 @@ for file_path in tqdm(files_list, unit='files'):
 	logging.info('Writing file in {:}'.format(meta))
 	pd.DataFrame([meta_instance]).dropna().set_index('dataset').to_csv(meta)
 	logging.info('Done.')
-
-
-
-
