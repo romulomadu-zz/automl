@@ -6,5 +6,5 @@ local/
 .idea
 .gitignore
 datasets/
-logs/
+logs/log.log
 datasets_synthetic/
