@@ -25,7 +25,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import logging
 cpath = os.getcwd()
 logging.basicConfig(
-	filename=re.sub('scripts', '', cpath) + '/logs/log.log',
+	filename=re.sub('misc', '', cpath) + '/logs/log.log',
 	format='%(asctime)s %(levelname)-8s %(message)s', 
 	level=logging.INFO, 
 	datefmt='%Y-%m-%d %H:%M:%S')
@@ -53,19 +53,19 @@ def make_search(X, y, params, method='grid', random_state=0):
 #	prepinput = 'yes'
 #pathinput = input('Enter datasets repository path:')
 #if not pathinput:
-#	pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
+#	pathinput = re.sub('misc', '', cpath) + '/datasets_preprocessed/'
 #type_ext = input('Enter extension type (default=.csv):')
 #if not type_ext:
 #	type_ext = '.csv'
 #pathoutput = input('Enter repository to save "metabase.csv":')
 #if not pathoutput:
-#	pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
+#	pathoutput = re.sub('misc', '', cpath) + '/meta_db/'
 
 # Without inputs
 prepinput = 'yes'
 type_ext = '.csv'
-pathinput = re.sub('scripts', '', cpath) + '/datasets_preprocessed/'
-pathoutput = re.sub('scripts', '', cpath) + '/meta_db/'
+pathinput = re.sub('misc', '', cpath) + '/datasets_preprocessed/'
+pathoutput = re.sub('misc', '', cpath) + '/meta_db/'
 
 # Get file in directory
 files_path = pathinput + '*' + type_ext
