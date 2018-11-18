@@ -58,7 +58,7 @@ def bayes_params():
 		'search_spaces': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
 		'scoring': make_scorer(nmse, greater_is_better=False),
 		'verbose': 0,
-		'n_iter': 20,
+		'n_iter': 100,
 		'cv': 10
 	}
 
