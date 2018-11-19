@@ -8,8 +8,9 @@ from skopt.space import Real
 def nmse(y_pred, y_true, verbose=0):
 	"""	Normalized mean squared error."""
 	y_mean = np.ones(y_true.shape[0]) * np.ndarray.mean(y_true)
+	epsilon = 1e-15
 
-	error = mean_squared_error(y_true, y_pred) / mean_squared_error(y_pred, y_mean)
+	error = mean_squared_error(y_true, y_pred) / (mean_squared_error(y_true, y_mean) + epsilon)
 	if verbose:
 		print('NMSE: {:}'.format(error))
 	return error
@@ -24,7 +25,7 @@ def grid_params():
 	param_grid = {
 		'param_grid': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
 		'scoring': make_scorer(nmse, greater_is_better=False),
-		'verbose': 0,
+		'verbose': 1,
 		'cv': 10
 	}
 
