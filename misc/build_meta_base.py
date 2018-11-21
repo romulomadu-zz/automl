@@ -12,7 +12,7 @@ import multiprocessing
 from glob import glob
 from automl.meta_features import MetaFeatures
 from sklearn.svm import SVR
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from skopt import BayesSearchCV
 from config import grid_params, random_params, bayes_params, nmse
 from automl.preprocessing import process_file
@@ -45,8 +45,7 @@ def make_search(X, y, params, method='grid', random_state=0):
     search.fit(X, y)
 
     return search
-
-
+	
 # With inputs
 #prepinput = input('Datasets are preprocessed? (yes or no): ')
 #if not prepinput:
@@ -72,6 +71,18 @@ files_path = pathinput + '*' + type_ext
 files_list = glob(files_path)
 meta_list = list()
 
+# Select search type
+search_type = sys.argv[1]
+if search_type == 'grid':
+	search_params = grid_params
+elif search_type == 'bayes':
+	search_params = bayes_params
+elif search_type == 'random':
+	search_params = random_params
+else:
+	search_type = 'grid'
+	search_params = grid_params
+	
 # Loop and prepare dataset and save
 # in output repo
 for file_path in tqdm(files_list, unit='files'):
@@ -86,8 +97,8 @@ for file_path in tqdm(files_list, unit='files'):
 		dataset = process_file(file_path)
 
 	# Separe features from target
-	X = dataset.iloc[:,:-1].values
-	y =  dataset.iloc[:,-1].values
+	X_train = dataset.iloc[:,:-1].values
+	y_train =  dataset.iloc[:,-1].values
 
 	meta_instance = {'dataset': dataset_name}
 
@@ -95,18 +106,14 @@ for file_path in tqdm(files_list, unit='files'):
 	# - Grid Search
 	# - Random Search
 	# - Bayesian Search
-	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-
-	logging.info('Bayes Search.')
-	model = make_search(X_train, y_train, bayes_params(), method='bayes')
-	y_pred = model.predict(X_test)
-	meta_instance['p_bayes_search'] = model.best_params_
-	meta_instance['nmse_bayes_search'] = nmse(y_pred, y_test)
-
+	logging.info('Search method: {:}.'.format(search_type))
+	model = make_search(X_train, y_train, search_params(), method=search_type)
+	meta_instance['p_{:}_search'.format(search_type)] = model.best_params_
+	meta_instance['nmse_{:}_search'.format(search_type)] = abs(model.best_score_)
 	meta_list.append(meta_instance)
 
-meta = pathoutput + 'meta_bayes.csv'
-
+# Save results
+meta = pathoutput + 'meta_grid.csv'
 logging.info('Writing file in {:}'.format(meta))
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
 logging.info('Done.')
