@@ -8,7 +8,7 @@ import ast
 sys.path.append("..")
 
 from automl.meta_learning import KNearestNeighbors
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import cross_validate
 from sklearn.svm import SVR
 from config import nmse
 
@@ -37,27 +37,22 @@ candidates = knn.predict(x)
 
 dataset = pd.read_csv(re.sub('misc', '', cpath) + 'datasets_preprocessed/' + dataset_name + '.csv')
 
-X_ = dataset.iloc[:,:-1]
-y_ = dataset.iloc[:,-1]
+X_train = dataset.iloc[:,:-1]
+y_train = dataset.iloc[:,-1]
 
-X_train, X_test, y_train, y_test = train_test_split(X_, y_, test_size=0.2, random_state=0)
-
-clf = SVR(**real_param)
-clf.fit(X_train, y_train)
-y_pred = clf.predict(X_test)
+learner = SVR(**real_param)
+model = cross_validate(learner, X_train, y_train, cv=10, scoring=make_scorer(nmse, greater_is_better=False))
 
 print(dataset_name+'\n')
-
-print('Real : {:}'.format(nmse(y_pred, y_test.values)))
+print('Real : {:}'.format(abs(model.best_score_)))
 
 i = 0
 for c in candidates:
 	i += 1
 	params = ast.literal_eval(c)
-	clf = SVR(**params)
-	clf.fit(X_train, y_train)
-	y_pred = clf.predict(X_test)
-	print('candidate 1: {:}'.format(nmse(y_pred, y_test.values)))
+	learner = SVR(**real_param)
+	model = cross_validate(learner, X_train, y_train, cv=10, scoring=make_scorer(nmse, greater_is_better=False))
+	print('candidate {:}: {:}'.format(i, abs(model.best_score_)))
 
 
 
