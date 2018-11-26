@@ -5,7 +5,7 @@ from scipy.stats import uniform as sp_uniform
 from skopt.space import Real
 
 
-def nmse(y_pred, y_true, verbose=0):
+def nmse(y_true, y_pred, verbose=0):
 	"""	Normalized mean squared error."""
 	error = 1 - r2_score(y_true, y_pred)
 	if verbose:
