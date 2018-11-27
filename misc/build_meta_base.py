@@ -113,7 +113,7 @@ for file_path in tqdm(files_list, unit='files'):
 	meta_list.append(meta_instance)
 
 # Save results
-meta = pathoutput + 'meta_grid.csv'
+meta = pathoutput + 'meta_{:}.csv'.format(search_type)
 logging.info('Writing file in {:}'.format(meta))
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
 logging.info('Done.')
