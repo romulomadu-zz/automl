@@ -12,7 +12,7 @@ import multiprocessing
 from glob import glob
 from automl.meta_features import MetaFeatures
 from sklearn.svm import SVR
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, cross_validate
 from skopt import BayesSearchCV
 from config import grid_params, random_params, bayes_params, nmse
 from automl.preprocessing import process_file
@@ -109,7 +109,9 @@ for file_path in tqdm(files_list, unit='files'):
 	logging.info('Search method: {:}.'.format(search_type))
 	model = make_search(X_train, y_train, search_params(), method=search_type)
 	meta_instance['p_{:}_search'.format(search_type)] = model.best_params_
-	meta_instance['nmse_{:}_search'.format(search_type)] = abs(model.best_score_)
+	meta_instance['mse_{:}_search'.format(search_type)] = abs(model.best_score_)
+	y_pred = model.predict(X_train)
+	meta_instance['nmse_{:}_search'.format(search_type)] = nmse(y_train, y_pred)
 	meta_list.append(meta_instance)
 
 # Save results
