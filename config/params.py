@@ -21,7 +21,8 @@ def grid_params():
 
 	param_grid = {
 		'param_grid': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
-		'scoring': make_scorer(nmse, greater_is_better=False),
+		#'scoring': make_scorer(nmse, greater_is_better=False),
+		'scoring': 'neg_mean_squared_error',
 		'verbose': 1,
 		'cv': 10
 	}
@@ -37,7 +38,8 @@ def random_params():
 
 	param_dist = {
 		'param_distributions': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
-		'scoring': make_scorer(nmse, greater_is_better=False),
+		#'scoring': make_scorer(nmse, greater_is_better=False),
+		'scoring': 'neg_mean_squared_error',
 		'verbose': 0,
 		'n_iter': 1000,
 		'cv': 10
@@ -54,7 +56,8 @@ def bayes_params():
 
 	search_spaces = {
 		'search_spaces': {'kernel': ['rbf'], 'C': C, 'gamma': gamma, 'epsilon': epsilon},
-		'scoring': make_scorer(nmse, greater_is_better=False),
+		#'scoring': make_scorer(nmse, greater_is_better=False),
+		'scoring': 'neg_mean_squared_error',
 		'verbose': 0,
 		'n_iter': 100,
 		'cv': 10
