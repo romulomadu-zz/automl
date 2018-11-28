@@ -110,8 +110,10 @@ for file_path in tqdm(files_list, unit='files'):
 	model = make_search(X_train, y_train, search_params(), method=search_type)
 	meta_instance['p_{:}_search'.format(search_type)] = model.best_params_
 	meta_instance['mse_{:}_search'.format(search_type)] = abs(model.best_score_)
+	logging.info('MSE: {:}.'.format(abs(model.best_score_)))
 	y_pred = model.predict(X_train)
 	meta_instance['nmse_{:}_search'.format(search_type)] = nmse(y_train, y_pred)
+	logging.info('NMSE: {:}.'.format(nmse(y_train, y_pred)))
 	meta_list.append(meta_instance)
 
 # Save results
