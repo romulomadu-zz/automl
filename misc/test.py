@@ -11,9 +11,11 @@ warnings.filterwarnings('ignore')
 from sklearn.svm import SVR
 from sklearn.model_selection import GridSearchCV, cross_validate
 from config import grid_params, random_params, bayes_params, nmse
+from automl.preprocessing import DFMinMaxScaler
 
-path = '../datasets_preprocessed/disclosure_x_noise.csv'
-dataset = pd.read_csv(path, index_col=0)
+path = '//media/romulo//C4B4FA64B4FA57FE//datasets//boston.csv'
+#dataset = pd.read_csv(path, index_col=0)
+dataset = pd.read_csv(path)
 
 def make_search(X, y, params, method='grid', random_state=0):
     num_cores = multiprocessing.cpu_count() - 1
