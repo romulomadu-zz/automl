@@ -48,7 +48,7 @@ logging.info('Application Run: build_meta_base')
 # Without inputs
 prepinput = 'yes'
 type_ext = '.csv'
-pathinput = re.sub('misc', '', cpath) + '/datasets_preprocessed/'
+pathinput = re.sub('misc', '', cpath) + '/datasets_synthetic/'
 pathoutput = re.sub('misc', '', cpath) + '/meta_db/'
 
 # Get file in directory
@@ -80,7 +80,7 @@ for file_path in tqdm(files_list, unit='files'):
 	#
 	meta_list.append(meta_instance)
 
-meta = pathoutput + 'meta_features.csv'
+meta = pathoutput + 'meta_features_synthetic.csv'
 
 logging.info('Writing file in {:}'.format(meta))
 pd.DataFrame(meta_list).dropna().set_index('dataset').to_csv(meta)
