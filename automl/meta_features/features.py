@@ -4,13 +4,16 @@
 import multiprocessing
 import networkx as nx
 import numpy as np
+import pandas as pd
 
 from random import uniform, seed, randint
 from scipy.stats.stats import pearsonr, spearmanr
 from sklearn.neighbors import KDTree
+from sklearn.feature_selection import f_regression, mutual_info_regression
 from sklearn.datasets import load_boston
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 from sklearn.svm import SVR
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import rankdata
@@ -89,21 +92,105 @@ class MetaFeatures(BaseMeta):
         # Feed and Calculate indicators
         params_dict = {
             'dataset' : self.dataset_name,
-            'm_c1': c1(X, y),
-            'm_c2': c2(X, y),
-            'm_c3': c3(X, y, n_jobs=32),
-            'm_c4': c4(X, y, n_jobs=32),
-            'm_l1': l1(X, y, resid),
-            'm_l2': l2(X, y, resid),
-            'm_l3': l3(X, y, svr, metric=self.metric),
-            'm_s1': s1(y, dist_matrix),
-            'm_s2': s2(X, y),
-            'm_s3': s3(X, y, dist_matrix, self.metric),
-            'm_s4': s4(X, y, metric=self.metric),
-            'm_t2': t2(X)
+            'm2': m2(X, y),
+            'm5': m5(X),
+            'f2': f2(X, y),
+            'c1': c1(X, y),
+            'c2': c2(X, y),
+            'c3': c3(X, y, n_jobs=32),
+            'c4': c4(X, y, n_jobs=32),
+            'c5': c5(X, y),
+            'l1_a': l1_a(X, y),
+            'l1_b': l1_b(X, y, resid),
+            'l2_a': l2_a(X, y),
+            'l2_b': l2_b(X, y, resid),
+            'l3_a': l3_a(X, y, metric=self.metric),
+            'l3_b': l3_b(X, y, svr, metric=self.metric),
+            's1': s1(y, dist_matrix),
+            's2': s2(X, y),
+            's3': s3(X, y, dist_matrix, self.metric),
+            's4': s4(X, y, metric=self.metric),
+            's5': s5(y),
+            's6': s6(y),
+            's7': s7(y),
+            't2': t2(X),
+            't3': t3(X),
+            't4': t4(X),
+            'r2_a': r2_a(X, y),
+            'r2_b': r2_b(X, y, model),
         }
 
         return params_dict
+
+
+def m2(X, y):
+    """
+    Calculate the average mutual information.
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values
+
+    Return
+    ------
+    float:
+        Average mutual information
+    """
+
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    mutual_list = list()
+    mi = mutual_info_regression(X_, y)
+    return (mi / mi.max()).mean()
+
+
+def m5(X):
+    m = X.shape[1]
+    n = X.shape[0]
+
+    if m==1:
+        return 0.
+
+    for j in range(m):
+        if j==0:
+            mi = mutual_info_regression(X, X[:,j])
+            mi /= mi.max()
+        else:
+            mi_ = mutual_info_regression(X, X[:,j])
+            mi_ /= mi_.max()
+            mi = np.vstack((mi, mi_))
+
+    triu_idx = np.triu_indices(m)
+    triu = abs(mi - np.eye(m))[triu_idx]
+
+    return triu.sum() / (len(triu) - m)
+
+
+def f2(X, y):
+    """
+    Calculate the average feature F-test to the output.
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values
+
+    Return
+    ------
+    float:
+        Average feature F-test to the output
+    """
+
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    f_list = list()
+    f, _ = f_regression(X_, y)
+    return (f / f.max()).mean()
 
 
 def c1(X, y):
@@ -133,7 +220,7 @@ def c1(X, y):
 
 def c2(X, y):
     """
-    Calculate the average feature correlation to the output.
+    Calculate the average numeric feature correlation to the output.
 
     Parameters
     ----------
@@ -147,10 +234,11 @@ def c2(X, y):
     float:
         Average feature correlation to the output
     """
-
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
     corr_list = list()
-    for col in range(X.shape[1]):
-        corr = spearmanr(X[:, col], y)
+    for col in range(X_.shape[1]):
+        corr = spearmanr(X_[:, col], y)
         corr_list.append(abs(corr[0]))
     return np.mean(corr_list)
     
@@ -231,7 +319,37 @@ def c4(X, y, min_resid=0.1, n_jobs=1):
         X = X[id_remove, :]
         y = y[id_remove]
       
-    return len(y) / n      
+    return len(y) / n
+
+
+def c5(X, y=None):
+    """
+    Calculate the average absolute correlation between the features.
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values, but not necessary
+
+    Return
+    ------
+    float:
+        The average absolute correlation between the features
+    """
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    corr = pd.DataFrame(X_).corr()
+    m = corr.shape[0]
+
+    if m==1:
+        return 0.
+
+    triu_idx = np.triu_indices(m)
+    triu = abs(corr.values - np.eye(m))[triu_idx]
+
+    return triu.sum() / (len(triu) - m)
 
 
 def s1(y, dist_matrix):
@@ -373,7 +491,33 @@ def s4(X, y, random_state=0, metric='mse'):
     return compute_metric(error, metric)
 
 
-def l1(X, y, resid):
+def l1_a(X, y):
+    """
+    Calculate the mean absolute error of OLS.
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values
+    model :np.array
+       Linear regression model residuals between X,y
+
+    Return
+    ------
+    float:
+        Mean absolute error
+    """
+
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    model = LinearRegression().fit(X_, y)
+    resid = y - model.predict(X_)
+
+    return np.mean(abs(resid))
+
+def l1_b(X, y, resid):
     """
     Calculate the mean absolute error of OLS.
 
@@ -394,7 +538,36 @@ def l1(X, y, resid):
     return np.mean(abs(resid))
 
 
-def l2(X, y, resid):
+def l2_a(X, y):
+    """
+    Calculate the mean squared error of OLS.
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values
+    model :np.array
+       Linear regression model residuals between X,y
+    Return
+    ------
+    float:
+        Mean squared error
+    """
+
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    model = LinearRegression().fit(X_, y)
+    resid = y - model.predict(X_)
+
+    # Normalize squared residuous
+    res_norm = resid ** 2
+    
+    return np.mean(res_norm)
+
+
+def l2_b(X, y, resid):
     """
     Calculate the mean squared error of OLS.
 
@@ -418,7 +591,35 @@ def l2(X, y, resid):
     return np.mean(res_norm)
 
 
-def l3(X, y, model, random_state=0, metric='mse'):
+def l3_a(X, y, random_state=0, metric='mse'):
+    """
+    Calculate the non-linearity of a linear regressor
+
+    Parameters
+    ----------
+    X : numpy.array
+        2d-array with features columns
+    y : numpy.array
+        Array of response values
+    model : statsmodels.regression.linear_model.RegressionResultsWrapper
+       Ordinary least square model between X,y
+    random_state : int
+        Seed to random calculations
+
+    Return
+    ------
+    float:
+        Normalized mean error
+    """
+
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    model = LinearRegression().fit(X_, y)
+
+    return l3_b(X_, y, model, random_state=random_state, metric=metric)
+
+
+def l3_b(X, y, model, random_state=0, metric='mse'):
     """
     Calculate the non-linearity of a linear regressor
 
@@ -488,6 +689,103 @@ def t2(X):
 
     return X.shape[0] / X.shape[1]
 
+##############################################################################
+#
+# Soares, 2004, metrics 
+#
+##############################################################################
+
+def s5(y):
+    """Calculate the coeficient of variation of target (std/mean) """
+    return y.std() / y.mean()
+
+
+def t3 (X) :
+    """Calculate the proportion of symbolic features. """
+    m = X.shape[1]
+    n_cat, _ = check_cat(X)
+
+    return n_cat / m
+
+
+def t4(X):
+    """Calculate the proportion of features with outliers"""
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    df = pd.DataFrame(X)
+    n = df.shape[0]
+    m = df.shape[1]
+    count = 0
+    for j in range(m):
+        upper, lower = upper_lower_fence(df.iloc[:, j])
+        for i in range(n) :
+            if (df.iloc[i, j] < lower) or (df.iloc[i, j] > upper):
+                count = count + 1
+                break
+
+    return count / m
+
+
+def s6(y):
+    """Check if there are outliers in the target"""
+    upper, lower = upper_lower_fence(pd.Series(y.flatten()))
+    n = len(y)
+    for i in range(n) :
+        if (y[i] < lower) or (y[i] > upper):
+            return True
+
+    return False
+
+def s7(y):
+    """Check if target is stationary (std>mean)"""
+    if y.std() > y.mean():
+        return True
+
+    return False
+
+
+def r2_a(X, y):
+    """Calculate r2 from a model with no symbolic features in dataset"""
+    _, cat_idx = check_cat(X)
+    X_ = np.delete(X, cat_idx, axis=1)
+    model = LinearRegression().fit(X_, y)
+
+    return r2_score(y, model.predict(X_))
+
+def r2_b(X, y, model):
+    """Calculate r2 from a model"""
+    return r2_score(y, model.predict(X))
+
+
+##############################################################################
+#
+# Utility Functions
+#
+##############################################################################
+
+def upper_lower_fence(series):
+    q1 = series.quantile(.25)
+    q3 = series.quantile(.75)
+    d = q3 - q1
+    upper = q3 + (1.5 * d)
+    lower = q1 - (1.5 * d)
+
+    return upper, lower
+
+
+def check_cat(X):
+    m = X.shape[1]
+    n = X.shape[0]
+    n_cat = 0
+    cat_idx = list()
+    for i in range(m):
+        n_unique = len(np.unique(X[:, i]))
+        if n_unique==2:
+            n_cat = n_cat + 1
+            cat_idx.append(i)
+
+    return n_cat, cat_idx
+
 
 def compute_metric(arr, metric):
     """Compute normalized chosen metric."""
@@ -554,9 +852,9 @@ def main():
     scaler_y = MinMaxScaler()
     X = scaler_X.fit_transform(X)
     y = scaler_X.fit_transform(y.reshape(-1, 1))
+    model = LinearRegression().fit(X, y)
 
     mf = MetaFeatures(dataset_name='Boston', metric='mse')
-
     print(mf.fit(X, y))
 
 
