@@ -39,7 +39,7 @@ if __name__ == '__main__':
 	n = 500
 	n_features = [1, 2, 5, 10]
 	n_poly_degree = [1, 3, 5]
-	n_std = [.0, .1, 0.2]
+	n_std = [.0, .5, 1.0]
 	n_freq = [1, 3]
 	n_variants = 50
 
