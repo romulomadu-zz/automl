@@ -37,11 +37,11 @@ def make_search(X, y, params, method='grid', random_state=0):
     n_features = X.shape[1]
     model = SVR()
     if method=='grid':
-        search = GridSearchCV(model, **params, n_jobs=num_cores)
+        search = GridSearchCV(model, **params, n_jobs=num_cores, return_train_score=False)
     elif method=='random':
-        search = RandomizedSearchCV(model, **params, n_jobs=num_cores) 
+        search = RandomizedSearchCV(model, **params, n_jobs=num_cores, return_train_score=False) 
     elif method=='bayes':
-        search = BayesSearchCV(model, **params, n_jobs=num_cores)
+        search = BayesSearchCV(model, **params, n_jobs=num_cores, return_train_score=False)
     search.fit(X, y)
 
     return search
@@ -59,6 +59,8 @@ def make_search(X, y, params, method='grid', random_state=0):
 #pathoutput = input('Enter repository to save "metabase.csv":')
 #if not pathoutput:
 #	pathoutput = re.sub('misc', '', cpath) + '/meta_db/'
+
+np.random.seed(0)
 
 # Without inputs
 prepinput = 'yes'
