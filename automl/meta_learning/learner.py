@@ -30,12 +30,15 @@ if __name__ == '__main__':
 	X = np.array([
 		[3, 1],
 		[1, 2],
+		[1.1, 1.9],
+		[1.075, 1.95],
+		[1.070, 1.95],
 		[4, 3]
 		])
 
-	y = np.array(['a', 'b', 'c'])
+	y = np.array(['a', 'b', 'c', 'd', 'e', 'f'])
 
-	learner = KNearestNeighbors(k=2)
+	learner = KNearestNeighbors(k=5)
 	learner.fit(X, y)
 	print(learner.predict(x))
 

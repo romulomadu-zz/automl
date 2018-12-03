@@ -13,8 +13,9 @@ def l1_norm_unweighted(x, metabase, k=3):
 	dist_list = list()
 	for i in range(n):
 		dist_list.append(dist(x, metabase[i, :], metabase))
+	nn = np.array(dist_list).argsort()[:k]
 
-	return np.array(dist_list).argsort()[:k]
+	return nn
 
 
 if __name__ == '__main__':
