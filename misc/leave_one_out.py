@@ -41,6 +41,8 @@ params = meta_base.p_grid_search
 
 loo_list = list()
 
+np.random.seed(0)
+
 for idx in tqdm(range(features.shape[0])):
 	instance_result = dict()
 
