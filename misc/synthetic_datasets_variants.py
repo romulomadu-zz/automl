@@ -8,7 +8,6 @@ from sklearn.preprocessing import MinMaxScaler
 def generate_poly(filename, degree=1, n=500, m=1, noise_variance=0):
 	X = np.random.rand(n,m)
 	roots = (np.random.rand(m, degree) * 2) - 1
-	#beta0 = (np.random.rand() * 2) - 1
 
 	list_y = list()
 	for i in range(n):
@@ -19,7 +18,7 @@ def generate_poly(filename, degree=1, n=500, m=1, noise_variance=0):
 				mul *= (X[i,d] + roots[d][p])
 			res += mul
 		list_y.append(res)
-	y = np.array(list_y)
+	y = np.array(list_y) + np.random.normal(0, noise_variance, 500)
 	y = MinMaxScaler().fit_transform(y.reshape(n, 1))
 
 	dataset = np.concatenate([X, y], axis=1)
