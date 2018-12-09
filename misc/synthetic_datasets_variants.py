@@ -2,26 +2,23 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
 
 
-def generate_poly(filename, degree=1, n=500, m=1, noise_variance=0):
+def generate_poly(filename, degree_list=[1], n=500, m=1, noise_variance=0):
 	X = np.random.rand(n,m)
-	roots = (np.random.rand(m, degree) * 2) - 1
+	beta = np.random.rand(m, len(degree_list) + 1)
 
 	list_y = list()
 	for i in range(n):
-		res = 0
-		for d in range(m):
-			mul = 1
-			for p in range(degree):
-				mul *= (X[i,d] + roots[d][p])
-			res += mul
-		list_y.append(res)
-	y = np.array(list_y) + np.random.normal(0, noise_variance, 500)
-	y = MinMaxScaler().fit_transform(y.reshape(n, 1))
-
-	dataset = np.concatenate([X, y], axis=1)
+		list_x =list()
+		for j in range(m):
+			list_x_j = list()
+			for p in degree_list:
+				list_x_j.append(X[i,j] ** p)			
+			list_x.append([1] + list_x_j)
+		y_i = (np.array(list_x) * beta).sum() + np.random.normal(0, noise_variance)
+		list_y.append(y_i)
+	dataset = np.concatenate([X, np.array(list_y).reshape(n, 1)], axis=1)
 	pd.DataFrame(dataset, columns=list(range(m+1))).to_csv(filename)
 
 
@@ -48,11 +45,11 @@ if __name__ == '__main__':
 
 	for v in range(n_variants):
 		for m in n_features:
-			for d in n_poly_degree:
+			for d in range(len(n_poly_degree)):
 				for s in n_std:
-					name = '{:}poly_{:}_{:}_{:}_{:}.csv'.format(path, d, m, s, v)
+					name = '{:}poly_{:}_{:}_{:}_{:}.csv'.format(path, n_poly_degree[d], m, s, v)
 					print('Created at {:}'.format(name))
-					generate_poly(name, degree=d, m=m, noise_variance=s)
+					generate_poly(name, degree_list=n_poly_degree[:d+1], m=m, noise_variance=s)
 
 	for v in range(n_variants):
 		for m in n_features:
